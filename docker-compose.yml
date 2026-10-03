@@ -1,0 +1,66 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: orderflow
+      POSTGRES_PASSWORD: orderflow
+    ports: ["5432:5432"]
+    volumes:
+      - ./infra/init-databases.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "psql -U orderflow -d inventory -c 'select 1' && psql -U orderflow -d orders -c 'select 1'"]
+      interval: 5s
+      retries: 10
+
+  kafka:
+    image: apache/kafka:3.8.0
+    ports: ["9092:9092"]
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: INTERNAL://:29092,EXTERNAL://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1"]
+      interval: 10s
+      retries: 10
+
+  order-service:
+    build: { context: ., args: { SERVICE: order-service } }
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/orders
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      INVENTORY_BASE_URL: http://inventory-service:8082
+      JWT_SECRET: ${JWT_SECRET:-change-me-this-is-a-demo-secret-of-32-bytes!!}
+    ports: ["8081:8081"]
+    restart: on-failure
+    depends_on:
+      postgres: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+
+  inventory-service:
+    build: { context: ., args: { SERVICE: inventory-service } }
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/inventory
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    ports: ["8082:8082"]
+    restart: on-failure
+    depends_on:
+      postgres: { condition: service_healthy }
+      kafka: { condition: service_healthy }
+
+  frontend:
+    build: ./frontend
+    ports: ["8080:80"]
+    depends_on: [order-service, inventory-service]
+
+volumes:
+  pgdata:
