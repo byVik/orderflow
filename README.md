@@ -1,6 +1,6 @@
 # OrderFlow
 
-[![CI](https://github.com/GITHUB_USER/orderflow/actions/workflows/ci.yml/badge.svg)](https://github.com/GITHUB_USER/orderflow/actions/workflows/ci.yml)
+[![CI](https://github.com/byVik/orderflow/actions/workflows/ci.yml/badge.svg)](https://github.com/byVik/orderflow/actions/workflows/ci.yml)
 ![Java 21](https://img.shields.io/badge/Java-21-orange)
 ![Spring Boot 3](https://img.shields.io/badge/Spring%20Boot-3.5-6DB33F)
 ![Kafka](https://img.shields.io/badge/Apache%20Kafka-event--driven-231F20)
