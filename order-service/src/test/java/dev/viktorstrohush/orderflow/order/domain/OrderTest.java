@@ -50,6 +50,14 @@ class OrderTest {
             assertThatThrownBy(() -> line("KB-01", 0, "1"))
                     .isInstanceOf(InvalidOrderException.class);
         }
+
+        @Test
+        void rechazaCantidadesPorEncimaDelMaximoPorLinea() {
+            assertThat(line("KB-01", OrderLine.MAX_QUANTITY, "1").quantity()).isEqualTo(100);
+            assertThatThrownBy(() -> line("KB-01", OrderLine.MAX_QUANTITY + 1, "1"))
+                    .isInstanceOf(InvalidOrderException.class)
+                    .hasMessageContaining("máxima");
+        }
     }
 
     @Nested

@@ -18,7 +18,7 @@ spring:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      # El serializador de valores se elige por tipo en KafkaConfig (JSON, texto o bytes).
       acks: all
       properties:
         enable.idempotence: true
@@ -29,10 +29,13 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
       properties:
         spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
-        spring.json.value.default.type: dev.viktorstrohush.orderflow.events.OrderPlacedEvent
+        # El tipo de cada evento lo declara su @KafkaListener (este servicio consume dos).
         spring.json.trusted.packages: dev.viktorstrohush.orderflow.events
         spring.json.use.type.headers: false
 
+orderflow:
+  outbox:
+    poll-interval-ms: 500
 
 management:
   endpoints:

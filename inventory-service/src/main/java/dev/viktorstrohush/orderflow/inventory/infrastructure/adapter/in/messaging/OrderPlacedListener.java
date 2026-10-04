@@ -16,7 +16,9 @@ class OrderPlacedListener {
         this.reserveStock = reserveStock;
     }
 
-    @KafkaListener(topics = Topics.ORDER_PLACED, groupId = "inventory-service")
+    /** Cada listener declara a qué clase se convierte el JSON: este servicio consume dos eventos distintos. */
+    @KafkaListener(topics = Topics.ORDER_PLACED, groupId = "inventory-service",
+            properties = "spring.json.value.default.type=dev.viktorstrohush.orderflow.events.OrderPlacedEvent")
     void on(OrderPlacedEvent event) {
         reserveStock.reserve(new ReservationRequest(
                 event.orderId(),

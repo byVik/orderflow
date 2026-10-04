@@ -7,7 +7,5 @@ const auth = useAuthStore()
 
 <template>
   <AppHeader v-if="auth.isAuthenticated" />
-  <main class="mx-auto max-w-5xl px-4 py-8">
-    <RouterView />
-  </main>
+  <RouterView />
 </template>

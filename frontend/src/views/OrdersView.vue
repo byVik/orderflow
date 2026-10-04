@@ -2,40 +2,44 @@
 import { useOrdersStore } from '@/stores/orders'
 import OrderStatusBadge from '@/components/OrderStatusBadge.vue'
 import { usePolling } from '@/composables/usePolling'
-import { formatDate, formatPrice, shortId } from '@/utils/format'
+import { formatDate, formatPrice, formatUnits, shortId } from '@/utils/format'
+import type { Order } from '@/api/types'
 
 const store = useOrdersStore()
 usePolling(store.fetchAll, store.hasPending)
+
+const units = (order: Order) => order.lines.reduce((sum, line) => sum + line.quantity, 0)
 </script>
 
 <template>
-  <section>
-    <h1 class="text-2xl font-bold">Mis pedidos</h1>
-    <p v-if="store.error" class="mt-6 text-rose-700">{{ store.error }}</p>
-    <p v-else-if="!store.loading && store.orders.length === 0" class="mt-6 text-slate-500">
+  <main class="page">
+    <div class="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
+      <h1 class="text-[32px] font-bold tracking-tight">Mis pedidos</h1>
+      <p class="text-[15px] text-muted">Se actualiza solo mientras haya pedidos pendientes</p>
+    </div>
+    <p v-if="store.error" class="alert mt-7" role="alert">{{ store.error }}</p>
+    <div
+      v-else-if="!store.loading && store.orders.length === 0"
+      class="mt-7 rounded-xl border border-dashed border-line-strong p-10 text-center text-muted"
+    >
       Todavía no has hecho ningún pedido.
-    </p>
-    <table v-else class="mt-6 w-full overflow-hidden rounded-xl border border-slate-200 bg-white text-sm">
-      <thead class="bg-slate-50 text-left text-slate-500">
-        <tr>
-          <th class="p-3">Pedido</th>
-          <th class="p-3">Fecha</th>
-          <th class="p-3">Estado</th>
-          <th class="p-3 text-right">Total</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-slate-100">
-        <tr v-for="order in store.orders" :key="order.id" class="hover:bg-slate-50">
-          <td class="p-3">
-            <RouterLink :to="{ name: 'order', params: { id: order.id } }" class="font-mono text-brand-600 hover:underline">
-              #{{ shortId(order.id) }}
-            </RouterLink>
-          </td>
-          <td class="p-3">{{ formatDate(order.createdAt) }}</td>
-          <td class="p-3"><OrderStatusBadge :status="order.status" /></td>
-          <td class="p-3 text-right font-semibold">{{ formatPrice(order.total) }}</td>
-        </tr>
-      </tbody>
-    </table>
-  </section>
+      <RouterLink to="/catalog" class="font-semibold text-brand-700 underline">Ver catálogo</RouterLink>
+    </div>
+    <ul v-else class="mt-7 flex flex-col gap-3">
+      <li v-for="order in store.orders" :key="order.id">
+        <RouterLink
+          :to="{ name: 'order', params: { id: order.id } }"
+          class="card flex flex-wrap items-center gap-x-6 gap-y-3 px-5 py-4.5 hover:border-line-strong"
+        >
+          <span class="num font-medium">#{{ shortId(order.id) }}</span>
+          <span class="flex-[1_1_180px] text-sm text-muted">{{ formatDate(order.createdAt) }} · {{ formatUnits(units(order)) }}</span>
+          <OrderStatusBadge :status="order.status" />
+          <span class="num min-w-26 text-right text-[17px] font-medium">{{ formatPrice(order.total) }}</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted" aria-hidden="true">
+            <path d="M9 6l6 6-6 6" />
+          </svg>
+        </RouterLink>
+      </li>
+    </ul>
+  </main>
 </template>

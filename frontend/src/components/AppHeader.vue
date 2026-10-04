@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
+import AppLogo from '@/components/AppLogo.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useCartStore } from '@/stores/cart'
 
@@ -7,6 +8,7 @@ const auth = useAuthStore()
 const cart = useCartStore()
 const router = useRouter()
 
+// Salida voluntaria: se vacía el carrito porque puede entrar otra persona en este navegador.
 function logout() {
   cart.clear()
   auth.logout()
@@ -15,18 +17,25 @@ function logout() {
 </script>
 
 <template>
-  <header class="border-b border-slate-200 bg-white">
-    <nav class="mx-auto flex max-w-5xl items-center gap-6 px-4 py-3">
-      <RouterLink to="/catalog" class="text-lg font-bold text-brand-600">OrderFlow</RouterLink>
+  <header class="border-b border-line bg-white">
+    <nav class="mx-auto flex max-w-280 flex-wrap items-center gap-x-7 gap-y-2 px-6 py-3" aria-label="Principal">
+      <RouterLink to="/catalog" class="flex items-center gap-2.5 text-[19px] font-bold tracking-tight">
+        <AppLogo />
+        OrderFlow
+      </RouterLink>
       <RouterLink to="/catalog" class="nav-link" active-class="nav-link--active">Catálogo</RouterLink>
       <RouterLink to="/orders" class="nav-link" active-class="nav-link--active">Mis pedidos</RouterLink>
-      <div class="ml-auto flex items-center gap-4">
-        <RouterLink to="/cart" class="relative rounded-md bg-brand-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-600">
+      <div class="ml-auto flex items-center gap-5">
+        <RouterLink to="/cart" class="btn btn-primary">
           Carrito
-          <span v-if="cart.count" data-testid="cart-count" class="ml-1 rounded-full bg-white px-1.5 text-xs text-brand-700">{{ cart.count }}</span>
+          <span
+            v-if="cart.count"
+            data-testid="cart-count"
+            class="num min-w-5.5 rounded-full bg-white px-1.5 text-center text-[13px] leading-5.5 font-medium text-brand-700"
+          >{{ cart.count }}</span>
         </RouterLink>
-        <span class="text-sm text-slate-500">{{ auth.username }}</span>
-        <button class="text-sm text-slate-500 hover:text-slate-900" @click="logout">Salir</button>
+        <span class="text-sm text-muted">{{ auth.username }}</span>
+        <button type="button" class="btn btn-quiet text-sm" @click="logout">Salir</button>
       </div>
     </nav>
   </header>
@@ -36,9 +45,10 @@ function logout() {
 @reference '../style.css';
 
 .nav-link {
-  @apply text-sm text-slate-600 hover:text-slate-900;
+  @apply py-3 text-[15px] font-medium text-muted hover:text-ink;
 }
 .nav-link--active {
-  @apply font-semibold text-slate-900;
+  @apply font-semibold text-ink;
+  box-shadow: inset 0 -2px 0 var(--color-brand-600);
 }
 </style>

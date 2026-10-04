@@ -16,3 +16,6 @@
 - [x] El carrito no supera el stock ni el máximo por línea (tests del store).
 - [x] La petición al backend solo incluye `sku` y `quantity` (el precio lo pone el backend).
 - [x] El token se envía como `Authorization: Bearer` y un `401` dispara el logout (tests del cliente HTTP).
+
+## Evolución
+La presentación de estas pantallas se rehízo en la [spec 006](006-rediseno-interfaz.md).

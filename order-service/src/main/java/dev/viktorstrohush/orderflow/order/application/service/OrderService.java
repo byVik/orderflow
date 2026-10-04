@@ -15,6 +15,7 @@ import dev.viktorstrohush.orderflow.order.domain.model.OrderLine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionOperations;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -33,21 +34,38 @@ public class OrderService implements PlaceOrderUseCase, GetOrdersQuery, CancelOr
     private final OrderRepository orders;
     private final OrderEventPublisher events;
     private final ProductCatalog catalog;
+    private final TransactionOperations tx;
 
-    public OrderService(OrderRepository orders, OrderEventPublisher events, ProductCatalog catalog) {
+    public OrderService(OrderRepository orders, OrderEventPublisher events, ProductCatalog catalog,
+                        TransactionOperations tx) {
         this.orders = orders;
         this.events = events;
         this.catalog = catalog;
+        this.tx = tx;
     }
 
+    /**
+     * Sin @Transactional a propósito: los precios se piden por HTTP y esa llamada no debe retener
+     * una conexión a la base de datos. La transacción cubre solo guardar el pedido y su evento.
+     */
     @Override
-    @Transactional
     public Order place(PlaceOrderCommand command) {
+        Order order = Order.place(command.customerId(), pricedLines(command));
+        Order saved = tx.execute(status -> {
+            Order persisted = orders.save(order);
+            events.publishOrderPlaced(persisted);
+            return persisted;
+        });
+        log.info("Pedido {} creado para el cliente {}", saved.id(), saved.customerId());
+        return saved;
+    }
+
+    private List<OrderLine> pricedLines(PlaceOrderCommand command) {
         Set<String> skus = command.lines().stream()
                 .map(PlaceOrderCommand.Line::sku)
                 .collect(Collectors.toSet());
         Map<String, BigDecimal> prices = catalog.pricesFor(skus);
-        List<OrderLine> lines = command.lines().stream()
+        return command.lines().stream()
                 .map(l -> {
                     BigDecimal price = prices.get(l.sku());
                     if (price == null) {
@@ -56,10 +74,6 @@ public class OrderService implements PlaceOrderUseCase, GetOrdersQuery, CancelOr
                     return new OrderLine(l.sku(), l.quantity(), price);
                 })
                 .toList();
-        Order saved = orders.save(Order.place(command.customerId(), lines));
-        events.publishOrderPlaced(saved);
-        log.info("Pedido {} creado para el cliente {}", saved.id(), saved.customerId());
-        return saved;
     }
 
     @Override
@@ -81,7 +95,10 @@ public class OrderService implements PlaceOrderUseCase, GetOrdersQuery, CancelOr
     public Order cancel(OrderId id, String customerId) {
         Order order = getById(id, customerId);
         order.cancel();
-        return orders.save(order);
+        Order saved = orders.save(order);
+        // inventory-service devolverá el stock si ya lo había reservado (compensación de la saga).
+        events.publishOrderCancelled(saved);
+        return saved;
     }
 
     @Override

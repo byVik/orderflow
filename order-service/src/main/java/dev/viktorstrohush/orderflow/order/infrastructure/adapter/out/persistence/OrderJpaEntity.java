@@ -39,7 +39,7 @@ class OrderJpaEntity {
     private Instant createdAt;
 
     @Version
-    private long version;
+    private Long version;
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @OrderBy("id ASC")

@@ -9,6 +9,9 @@ y el contexto que se da a los agentes de IA (Claude Code) para implementar.
 | [001 · Crear pedido](001-crear-pedido.md) | ✅ Implementada |
 | [002 · Reserva de stock](002-reserva-stock.md) | ✅ Implementada |
 | [003 · Flujo de compra en el frontend](003-frontend-flujo-compra.md) | ✅ Implementada |
+| [004 · Cancelación y liberación de stock](004-cancelacion-y-liberacion-de-stock.md) | ✅ Implementada |
+| [005 · Outbox transaccional](005-outbox-transaccional.md) | ✅ Implementada |
+| [006 · Rediseño de la interfaz](006-rediseno-interfaz.md) | ✅ Implementada |
 
 Flujo de trabajo:
 

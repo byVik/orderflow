@@ -4,19 +4,20 @@ import type { OrderStatus } from '@/api/types'
 
 const props = defineProps<{ status: OrderStatus }>()
 
-const STYLES: Record<OrderStatus, { label: string; classes: string }> = {
-  PENDING: { label: 'Pendiente', classes: 'bg-amber-100 text-amber-800' },
-  CONFIRMED: { label: 'Confirmado', classes: 'bg-emerald-100 text-emerald-800' },
-  REJECTED: { label: 'Rechazado', classes: 'bg-rose-100 text-rose-800' },
-  CANCELLED: { label: 'Cancelado', classes: 'bg-slate-200 text-slate-700' },
+// Los estados se distinguen también por la forma del punto, no solo por el color.
+const STYLES: Record<OrderStatus, { label: string; pill: string; dot: string }> = {
+  PENDING: { label: 'Pendiente', pill: 'bg-warn-50 text-warn-800', dot: 'rounded-full bg-warn-800 animate-pulse motion-reduce:animate-none' },
+  CONFIRMED: { label: 'Confirmado', pill: 'bg-brand-50 text-brand-700', dot: 'rounded-full bg-brand-700' },
+  REJECTED: { label: 'Rechazado', pill: 'bg-danger-50 text-danger-700', dot: 'rounded-[2px] bg-danger-700' },
+  CANCELLED: { label: 'Cancelado', pill: 'bg-chip text-chip-ink', dot: 'rounded-[2px] bg-chip-ink' },
 }
 
 const style = computed(() => STYLES[props.status])
 </script>
 
 <template>
-  <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium" :class="style.classes">
-    <span v-if="status === 'PENDING'" class="mr-1.5 h-1.5 w-1.5 animate-pulse rounded-full bg-amber-500"></span>
+  <span class="inline-flex h-7 items-center gap-2 rounded-full px-3 text-[13px] font-semibold" :class="style.pill">
+    <span class="h-2 w-2" :class="style.dot" aria-hidden="true"></span>
     {{ style.label }}
   </span>
 </template>

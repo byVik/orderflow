@@ -6,12 +6,14 @@ confirma al instante: queda `PENDING` hasta que inventory-service reserve el sto
 
 ## Reglas de negocio
 - R1. Un pedido tiene al menos una línea y no repite SKUs.
-- R2. La cantidad de cada línea está entre 1 y 100.
+- R2. La cantidad de cada línea está entre 1 y 100. La regla vive en el dominio (`OrderLine`); el DTO web la repite para responder antes.
 - R3. El precio **no** lo envía el cliente: se obtiene del catálogo en el momento de crear el pedido.
 - R4. Si algún SKU no existe en el catálogo, el pedido se rechaza con `400`.
+- R4b. Los precios se piden **antes** de abrir la transacción y con *timeouts*. Si el catálogo no responde, se responde `503` y no se guarda nada.
 - R5. El cliente del pedido es el `sub` del JWT; un usuario solo puede ver y cancelar sus pedidos.
 - R6. Solo se puede cancelar un pedido `PENDING`; en otro caso se responde `409`.
-- R7. Al crearse el pedido se publica `OrderPlaced` en `orders.order-placed.v1`, **después** del commit.
+- R7. Al crearse el pedido se publica `OrderPlaced` en `orders.order-placed.v1` mediante el outbox (spec 005).
+- R8. Al cancelarse se publica `OrderCancelled` (spec 004).
 
 ## Estados
 `PENDING → CONFIRMED | REJECTED | CANCELLED` (las tres son estados finales).
@@ -29,7 +31,9 @@ confirma al instante: queda `PENDING` hasta que inventory-service reserve el sto
 - [x] Dado un pedido sin líneas o con cantidad 0, cuando se envía, recibe `400`.
 - [x] Dado un pedido de otro usuario, cuando lo consulta, recibe `404`.
 - [x] Dado un pedido `CONFIRMED`, cuando intenta cancelarlo, recibe `409`.
-- [x] Sin token, cualquier endpoint de pedidos responde `401`.
+- [x] Sin token, con un token caducado o con uno firmado con otra clave, los endpoints de pedidos responden `401`.
+- [x] Una cantidad mayor que 100 se rechaza también en el dominio.
+- [x] Si el catálogo no está disponible, crear un pedido responde `503`.
 
 ## Fuera de alcance
 Pagos, envíos y edición de un pedido ya creado.

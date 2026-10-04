@@ -24,4 +24,18 @@ class ProductTest {
         assertThatThrownBy(() -> p.reserve(3)).isInstanceOf(InsufficientStockException.class);
         assertThat(p.availableQuantity()).isEqualTo(2);
     }
+
+    @Test
+    void liberarDevuelveLasUnidadesAlStock() {
+        Product p = new Product("KB-01", "Teclado", BigDecimal.TEN, 5);
+        p.reserve(3);
+        p.release(3);
+        assertThat(p.availableQuantity()).isEqualTo(5);
+    }
+
+    @Test
+    void noSePuedeLiberarUnaCantidadNoPositiva() {
+        Product p = new Product("KB-01", "Teclado", BigDecimal.TEN, 5);
+        assertThatThrownBy(() -> p.release(0)).isInstanceOf(IllegalArgumentException.class);
+    }
 }

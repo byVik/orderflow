@@ -1,8 +1,78 @@
 @import 'tailwindcss';
 
+/* Tokens del diseño (prototipo en Claude Design, ver specs/006). */
 @theme {
-  --color-brand-50: #eef7f6;
-  --color-brand-500: #1f9e8f;
-  --color-brand-600: #18857a;
-  --color-brand-700: #136b62;
+  --font-sans: 'Hanken Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+
+  --color-ink: #0e1726;
+  --color-muted: #4a5568;
+  --color-ground: #f4f6f8;
+  --color-line: #d9dee5;
+  --color-line-strong: #aeb7c4;
+  --color-chip: #e6e9ee;
+  --color-chip-ink: #3d4654;
+
+  --color-brand-50: #e3f3f0;
+  --color-brand-300: #5eead4;
+  --color-brand-600: #0f766e;
+  --color-brand-700: #0b5f58;
+
+  --color-warn-50: #fef3c7;
+  --color-warn-600: #b45309;
+  --color-warn-800: #92400e;
+
+  --color-danger-50: #fde8e8;
+  --color-danger-700: #9f1d1d;
+}
+
+@layer base {
+  body {
+    @apply bg-ground font-sans text-ink antialiased;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand-600);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .page {
+    @apply mx-auto w-full max-w-280 px-6 pt-10 pb-16;
+  }
+
+  .card {
+    @apply rounded-xl border border-line bg-white;
+  }
+
+  /* Altura mínima de 44 px: objetivo táctil cómodo. */
+  .btn {
+    @apply inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-lg px-4 text-[15px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .btn-primary {
+    @apply bg-brand-600 text-white hover:bg-brand-700;
+  }
+
+  .btn-outline {
+    @apply border border-brand-600 bg-white text-brand-700 hover:bg-brand-50;
+  }
+
+  .btn-danger {
+    @apply border border-danger-700 bg-white text-danger-700 hover:bg-danger-50;
+  }
+
+  .btn-quiet {
+    @apply px-1 font-medium text-muted hover:text-ink;
+  }
+
+  /* Cifras, SKUs e identificadores: monoespaciada y con dígitos de ancho fijo. */
+  .num {
+    @apply font-mono tabular-nums;
+  }
+
+  .alert {
+    @apply rounded-lg bg-danger-50 px-4 py-3 text-sm leading-relaxed text-danger-700;
+  }
 }

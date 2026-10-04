@@ -36,10 +36,11 @@ services:
   order-service:
     build: { context: ., args: { SERVICE: order-service } }
     environment:
+      # Perfil de demo: activa el login sin contraseña y un secreto JWT conocido (application-dev.yml).
+      SPRING_PROFILES_ACTIVE: dev
       DB_URL: jdbc:postgresql://postgres:5432/orders
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       INVENTORY_BASE_URL: http://inventory-service:8082
-      JWT_SECRET: ${JWT_SECRET:-change-me-this-is-a-demo-secret-of-32-bytes!!}
     ports: ["8081:8081"]
     restart: on-failure
     depends_on:

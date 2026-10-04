@@ -1,30 +1,53 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Product } from '@/api/types'
+import { MAX_QUANTITY_PER_ITEM } from '@/stores/cart'
 import { formatPrice } from '@/utils/format'
 
-const props = defineProps<{ product: Product; inCart: number }>()
+const props = withDefaults(defineProps<{ product: Product; inCart: number; maxStock?: number }>(), { maxStock: 0 })
 const emit = defineEmits<{ add: [product: Product] }>()
 
-const remaining = computed(() => props.product.availableQuantity - props.inCart)
-const lowStock = computed(() => props.product.availableQuantity > 0 && props.product.availableQuantity <= 5)
+// El mismo límite que aplica el carrito: stock disponible y máximo por línea.
+const remaining = computed(() => Math.min(props.product.availableQuantity, MAX_QUANTITY_PER_ITEM) - props.inCart)
+const outOfStock = computed(() => props.product.availableQuantity === 0)
+const lowStock = computed(() => !outOfStock.value && props.product.availableQuantity <= 5)
+const stockBar = computed(() => {
+  const scale = Math.max(props.maxStock, props.product.availableQuantity, 1)
+  return `${Math.round((props.product.availableQuantity / scale) * 100)}%`
+})
 </script>
 
 <template>
-  <article class="flex flex-col rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-    <p class="text-xs font-medium uppercase tracking-wide text-slate-400">{{ product.sku }}</p>
-    <h3 class="mt-1 font-semibold">{{ product.name }}</h3>
-    <p class="mt-2 text-xl font-bold text-brand-700">{{ formatPrice(product.price) }}</p>
-    <p class="mt-1 text-sm" :class="lowStock ? 'text-amber-700' : 'text-slate-500'">
-      <template v-if="product.availableQuantity === 0">Sin stock</template>
-      <template v-else>{{ product.availableQuantity }} disponibles</template>
-    </p>
+  <article class="card flex flex-col gap-3.5 p-5">
+    <!-- Alturas mínimas fijas: precios y botones quedan alineados entre tarjetas. -->
+    <div class="flex min-h-6 items-center justify-between gap-3">
+      <span class="num text-xs tracking-wider text-muted">{{ product.sku }}</span>
+      <span v-if="lowStock" class="rounded-md bg-warn-50 px-2 py-0.5 text-xs font-semibold text-warn-800">Últimas unidades</span>
+    </div>
+    <h3 class="min-h-12 text-[17px] leading-snug font-semibold">{{ product.name }}</h3>
+    <p class="num text-2xl font-medium tracking-tight">{{ formatPrice(product.price) }}</p>
+    <div class="flex flex-col gap-1.5">
+      <div class="h-1 overflow-hidden rounded-full bg-chip" aria-hidden="true">
+        <div class="h-1 rounded-full" :class="lowStock ? 'bg-warn-600' : 'bg-brand-600'" :style="{ width: stockBar }"></div>
+      </div>
+      <span class="text-[13px] text-muted">
+        <template v-if="outOfStock">Sin stock</template>
+        <template v-else>{{ product.availableQuantity }} disponibles</template>
+      </span>
+    </div>
     <button
-      class="mt-4 rounded-md bg-brand-500 px-3 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:cursor-not-allowed disabled:bg-slate-300"
+      type="button"
+      class="btn mt-auto"
+      :class="inCart ? 'btn-primary' : 'btn-outline'"
       :disabled="remaining <= 0"
       @click="emit('add', product)"
     >
-      {{ inCart ? `Añadir otro (${inCart} en el carrito)` : 'Añadir al carrito' }}
+      {{ inCart ? 'Añadir otro' : 'Añadir al carrito' }}
+      <span
+        v-if="inCart"
+        class="num min-w-5.5 rounded-full bg-white px-1.5 text-center text-[13px] leading-5.5 font-medium text-brand-700"
+        :aria-label="`${inCart} en el carrito`"
+      >{{ inCart }}</span>
     </button>
   </article>
 </template>

@@ -11,7 +11,10 @@ const product = (sku: string, price: number, availableQuantity: number): Product
 })
 
 describe('cart store', () => {
-  beforeEach(() => setActivePinia(createPinia()))
+  beforeEach(() => {
+    localStorage.clear()
+    setActivePinia(createPinia())
+  })
 
   it('suma cantidades y total', () => {
     const cart = useCartStore()
@@ -59,5 +62,29 @@ describe('cart store', () => {
     const cart = useCartStore()
     cart.add(product('KB-01', 89.9, 10))
     expect(cart.toOrderRequest()).toEqual({ lines: [{ sku: 'KB-01', quantity: 1 }] })
+  })
+
+  it('el carrito sobrevive a una recarga de la página', () => {
+    const cart = useCartStore()
+    cart.add(product('KB-01', 89.9, 10))
+    cart.add(product('KB-01', 89.9, 10))
+
+    setActivePinia(createPinia()) // otra "pestaña": un store nuevo que lee lo guardado
+    expect(useCartStore().quantityOf('KB-01')).toBe(2)
+  })
+
+  it('al refrescar el catálogo actualiza precios y recorta lo que ya no hay', () => {
+    const cart = useCartStore()
+    cart.add(product('KB-01', 89.9, 10))
+    cart.setQuantity('KB-01', 5)
+    cart.add(product('MS-01', 39.9, 10))
+    cart.add(product('GONE', 5, 10))
+
+    cart.refresh([product('KB-01', 99.9, 2), product('MS-01', 39.9, 0)])
+
+    expect(cart.quantityOf('KB-01')).toBe(2)
+    expect(cart.items[0].product.price).toBe(99.9)
+    expect(cart.quantityOf('MS-01')).toBe(0)
+    expect(cart.quantityOf('GONE')).toBe(0)
   })
 })

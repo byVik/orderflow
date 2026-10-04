@@ -1,6 +1,7 @@
 package dev.viktorstrohush.orderflow.order.application;
 
 import dev.viktorstrohush.orderflow.order.application.port.in.PlaceOrderUseCase.PlaceOrderCommand;
+import dev.viktorstrohush.orderflow.order.application.port.out.CatalogUnavailableException;
 import dev.viktorstrohush.orderflow.order.application.port.out.OrderEventPublisher;
 import dev.viktorstrohush.orderflow.order.application.port.out.OrderRepository;
 import dev.viktorstrohush.orderflow.order.application.port.out.ProductCatalog;
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.support.TransactionOperations;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -43,7 +45,12 @@ class OrderServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new OrderService(repository, publisher, catalog);
+        // Sin Spring no hay transacción real: el bloque transaccional se ejecuta tal cual.
+        service = new OrderService(repository, publisher, catalog, TransactionOperations.withoutTransaction());
+    }
+
+    private static Order pendingOrder(String customer) {
+        return Order.place(customer, List.of(new OrderLine("KB-01", 1, BigDecimal.TEN)));
     }
 
     @Test
@@ -68,8 +75,19 @@ class OrderServiceTest {
     }
 
     @Test
+    void siElCatalogoNoRespondeNoSeGuardaNiSePublicaNada() {
+        when(catalog.pricesFor(anySet())).thenThrow(new CatalogUnavailableException(new RuntimeException("timeout")));
+
+        assertThatThrownBy(() -> service.place(
+                new PlaceOrderCommand("viktor", List.of(new PlaceOrderCommand.Line("KB-01", 1)))))
+                .isInstanceOf(CatalogUnavailableException.class);
+        verify(repository, never()).save(any());
+        verify(publisher, never()).publishOrderPlaced(any());
+    }
+
+    @Test
     void unClienteNoPuedeVerPedidosDeOtro() {
-        Order order = Order.place("otro", List.of(new OrderLine("KB-01", 1, BigDecimal.TEN)));
+        Order order = pendingOrder("otro");
         when(repository.findById(order.id())).thenReturn(Optional.of(order));
 
         assertThatThrownBy(() -> service.getById(order.id(), "viktor"))
@@ -77,14 +95,48 @@ class OrderServiceTest {
     }
 
     @Test
+    void cancelarUnPedidoPendientePublicaLaCancelacion() {
+        Order order = pendingOrder("viktor");
+        when(repository.findById(order.id())).thenReturn(Optional.of(order));
+        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        Order cancelled = service.cancel(order.id(), "viktor");
+
+        assertThat(cancelled.status()).isEqualTo(OrderStatus.CANCELLED);
+        verify(publisher).publishOrderCancelled(order);
+    }
+
+    @Test
+    void unClienteNoPuedeCancelarPedidosDeOtro() {
+        Order order = pendingOrder("otro");
+        when(repository.findById(order.id())).thenReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> service.cancel(order.id(), "viktor"))
+                .isInstanceOf(OrderNotFoundException.class);
+        verify(publisher, never()).publishOrderCancelled(any());
+    }
+
+    @Test
     void elResultadoDeStockEsIdempotente() {
-        Order order = Order.place("viktor", List.of(new OrderLine("KB-01", 1, BigDecimal.TEN)));
+        Order order = pendingOrder("viktor");
         order.confirm();
         when(repository.findById(order.id())).thenReturn(Optional.of(order));
 
         service.apply(order.id(), false, "duplicado");
 
         assertThat(order.status()).isEqualTo(OrderStatus.CONFIRMED);
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void unResultadoParaUnPedidoCanceladoSeIgnora() {
+        Order order = pendingOrder("viktor");
+        order.cancel();
+        when(repository.findById(order.id())).thenReturn(Optional.of(order));
+
+        service.apply(order.id(), true, null);
+
+        assertThat(order.status()).isEqualTo(OrderStatus.CANCELLED);
         verify(repository, never()).save(any());
     }
 }

@@ -33,6 +33,14 @@ public final class Product {
         availableQuantity -= quantity;
     }
 
+    /** Devuelve al stock unidades que se habían reservado (cancelación de un pedido). */
+    public void release(int quantity) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("La cantidad a liberar debe ser mayor que 0");
+        }
+        availableQuantity += quantity;
+    }
+
     public String sku() { return sku; }
     public String name() { return name; }
     public BigDecimal price() { return price; }
