@@ -1,5 +1,7 @@
 # 001 · Crear pedido
 
+[English](../001-place-order.md) · **Español**
+
 ## Contexto
 Un usuario autenticado crea un pedido con uno o varios productos del catálogo. El pedido no se
 confirma al instante: queda `PENDING` hasta que inventory-service reserve el stock (ver spec 002).

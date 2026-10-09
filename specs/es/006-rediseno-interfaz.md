@@ -1,5 +1,7 @@
 # 006 · Rediseño de la interfaz
 
+[English](../006-interface-redesign.md) · **Español**
+
 ## Contexto
 La primera interfaz cumplía la spec 003 pero era genérica y no explicaba lo más propio del sistema:
 que el pedido se confirma de forma asíncrona. El rediseño se prototipó primero en **Claude Design**

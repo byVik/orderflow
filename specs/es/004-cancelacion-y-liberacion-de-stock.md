@@ -1,5 +1,7 @@
 # 004 · Cancelación y liberación de stock
 
+[English](../004-cancellation-and-stock-release.md) · **Español**
+
 ## Contexto
 Hasta ahora cancelar un pedido `PENDING` solo cambiaba su estado. Si `OrderPlaced` ya estaba en
 camino, inventory-service reservaba el stock igualmente y el resultado se ignoraba: el stock
@@ -11,7 +13,7 @@ quedaba descontado para un pedido cancelado. Esta spec añade la **compensación
 - R3. Al recibir `OrderCancelled`:
   - si la reserva existe y está `RESERVED`, se devuelve el stock y la reserva pasa a `RELEASED`;
   - si está `REJECTED` o `RELEASED`, no se hace nada (idempotencia);
-  - si **no existe**, se registra como `REJECTED` con el motivo «pedido cancelado». Así un `OrderPlaced`
+  - si **no existe**, se registra como `REJECTED` con el motivo `CANCELLED_BEFORE_RESERVING` (un código desde la [spec 007](007-internacionalizacion.md)). Así un `OrderPlaced`
     que llegue después no reserva nada.
 - R4. Entre topics distintos no hay garantía de orden: `OrderCancelled` puede procesarse antes que
   `OrderPlaced`. R3 cubre los dos órdenes.

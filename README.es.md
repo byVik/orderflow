@@ -21,7 +21,8 @@ Es un proyecto personal para practicar **Spring Boot**, **arquitectura hexagonal
 |----------|------------------------|
 | ![Catálogo](docs/screenshots/02-catalogo.png) | ![Pedido pendiente](docs/screenshots/05-detalle-pendiente.png) |
 
-Más capturas en [docs/screenshots](docs/screenshots/).
+Más capturas en [docs/screenshots](docs/screenshots/). La interfaz está disponible en inglés y en
+español, con un selector en la cabecera; las capturas muestran la versión en inglés.
 
 ---
 
@@ -99,8 +100,8 @@ El dominio no conoce Spring: los adaptadores dependen del núcleo y nunca al rev
 | Mensajería | Apache Kafka (KRaft), Spring Kafka, outbox transaccional, reintentos + dead-letter topic |
 | Persistencia | PostgreSQL 16, Flyway, base de datos por servicio |
 | Seguridad | Spring Security, OAuth2 Resource Server, JWT |
-| API | OpenAPI 3 / Swagger UI (springdoc), errores RFC 7807 (Problem Details) |
-| Frontend | Vue 3 (Composition API, `<script setup>`), TypeScript, Pinia, Vue Router, Tailwind CSS, Vite |
+| API | OpenAPI 3 / Swagger UI (springdoc), errores RFC 7807 (Problem Details) con códigos de error estables |
+| Frontend | Vue 3 (Composition API, `<script setup>`), TypeScript, Pinia, Vue Router, vue-i18n (inglés / español), Tailwind CSS, Vite |
 | Testing | JUnit 5, Mockito, AssertJ, MockMvc, **Testcontainers** (PostgreSQL + Kafka), Awaitility, ArchUnit, Vitest, Vue Test Utils |
 | DevOps | Docker multi-stage, Docker Compose, GitHub Actions (CI), JaCoCo |
 
@@ -115,6 +116,7 @@ El dominio no conoce Spring: los adaptadores dependen del núcleo y nunca al rev
 - **Concurrencia en pedidos:** bloqueo optimista (`@Version`). Si cancelar y confirmar coinciden, gana el primero y el otro recibe un `409`.
 - **Orden de eventos:** la clave del mensaje es el `orderId`, así todos los eventos de un pedido van a la misma partición.
 - **Errores en consumidores:** 3 reintentos y después el mensaje va a un *dead-letter topic* declarado, dejando un log de error.
+- **El backend identifica los errores y la interfaz los traduce:** cada respuesta de error lleva un `code` estable (y `params` cuando el mensaje tiene datos), y el motivo de rechazo de un pedido también es un código. La interfaz los convierte en texto en inglés o en español, y recurre al `detail` en inglés si no conoce el código. El dominio no guarda textos para el usuario ([spec 007](specs/es/007-internacionalizacion.md)).
 - **Seguro por defecto:** el login de demo y su secreto JWT solo existen con el perfil `dev`. Sin perfil, order-service exige `JWT_SECRET` y no expone `/api/auth/token`. En producción los servicios serían resource servers de Keycloak/Auth0.
 
 ## Cómo ejecutarlo
@@ -170,7 +172,7 @@ cd frontend && npm test    # Vitest
 - **Web:** `@WebMvcTest` con la configuración de seguridad real: tokens válidos, caducados y firmados con otra clave; validación, 401, 404, 409 y 503.
 - **Arquitectura:** ArchUnit comprueba que el dominio no depende de frameworks ni de otras capas.
 - **Integración:** `@SpringBootTest` con PostgreSQL y Kafka reales en Testcontainers. Prueban el outbox de extremo a extremo, la idempotencia ante duplicados, la liberación de stock (incluida la cancelación que llega antes que el pedido) y que varias reservas simultáneas no venden de más.
-- **Frontend:** stores, cliente HTTP, guard del router, sondeo con temporizadores simulados y componentes.
+- **Frontend:** stores, cliente HTTP, guard del router, sondeo con temporizadores simulados, componentes, y la traducción de errores y textos en los dos idiomas.
 
 La CI de GitHub Actions ejecuta todo en cada push y construye las imágenes Docker.
 
@@ -178,14 +180,14 @@ La CI de GitHub Actions ejecuta todo en cada push y construye las imágenes Dock
 
 El proyecto se ha desarrollado con **Spec Driven Development** y **Claude Code** como asistente:
 
-1. Cada funcionalidad empieza como especificación en [`/specs`](specs/), con reglas y criterios de aceptación.
+1. Cada funcionalidad empieza como especificación en [`/specs`](specs/es/), con reglas y criterios de aceptación.
 2. Los criterios se convierten en tests.
 3. La implementación se hace con el agente, usando la spec como contexto, y **todo el código se revisa** antes de integrarlo.
 
 Dos ejemplos de cómo se usó el agente más allá de escribir código:
 
-- **Revisión del propio diseño.** Una auditoría con el agente encontró fallos que los tests no cubrían: una cancelación dejaba el stock descontado, y un evento podía perderse si el servicio caía justo tras el commit. La fuga de stock se reprodujo primero contra el sistema en marcha, y los dos se resolvieron con su spec ([004](specs/004-cancelacion-y-liberacion-de-stock.md), [005](specs/005-outbox-transaccional.md)) y sus tests.
-- **Diseño de la interfaz.** Las pantallas se prototiparon en **Claude Design** (un lienzo con las cinco vistas, generado desde Claude Code) y después se implementaron en Vue 3 + Tailwind ([spec 006](specs/006-rediseno-interfaz.md)). El resultado se comprobó con capturas automáticas en escritorio y móvil, que son las de este README.
+- **Revisión del propio diseño.** Una auditoría con el agente encontró fallos que los tests no cubrían: una cancelación dejaba el stock descontado, y un evento podía perderse si el servicio caía justo tras el commit. La fuga de stock se reprodujo primero contra el sistema en marcha, y los dos se resolvieron con su spec ([004](specs/es/004-cancelacion-y-liberacion-de-stock.md), [005](specs/es/005-outbox-transaccional.md)) y sus tests.
+- **Diseño de la interfaz.** Las pantallas se prototiparon en **Claude Design** (un lienzo con las cinco vistas, generado desde Claude Code) y después se implementaron en Vue 3 + Tailwind ([spec 006](specs/es/006-rediseno-interfaz.md)). El resultado se comprobó con capturas automáticas en escritorio y móvil, que son las de este README.
 
 La IA acelera la implementación. Las decisiones de diseño, la revisión y la responsabilidad del
 código son mías.

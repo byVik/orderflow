@@ -1,5 +1,7 @@
 # 003 · Flujo de compra en el frontend
 
+[English](../003-frontend-purchase-flow.md) · **Español**
+
 ## Pantallas
 1. **Login (demo)**: usuario de 3 a 30 caracteres; guarda el JWT y su caducidad.
 2. **Catálogo**: tarjetas con precio y stock; aviso de stock bajo (≤ 5); no se puede añadir más que el stock disponible.

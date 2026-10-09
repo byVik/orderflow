@@ -5,10 +5,13 @@ import dev.viktorstrohush.orderflow.order.application.port.in.CancelOrderUseCase
 import dev.viktorstrohush.orderflow.order.application.port.in.GetOrdersQuery;
 import dev.viktorstrohush.orderflow.order.application.port.in.PlaceOrderUseCase;
 import dev.viktorstrohush.orderflow.order.application.port.out.CatalogUnavailableException;
+import dev.viktorstrohush.orderflow.order.domain.exception.InvalidOrderException;
 import dev.viktorstrohush.orderflow.order.domain.exception.InvalidOrderStateException;
+import dev.viktorstrohush.orderflow.order.domain.exception.OrderError;
 import dev.viktorstrohush.orderflow.order.domain.exception.OrderNotFoundException;
 import dev.viktorstrohush.orderflow.order.domain.model.Order;
 import dev.viktorstrohush.orderflow.order.domain.model.OrderId;
+import dev.viktorstrohush.orderflow.order.domain.model.OrderStatus;
 import dev.viktorstrohush.orderflow.order.domain.model.OrderLine;
 import dev.viktorstrohush.orderflow.order.infrastructure.config.SecurityConfig;
 import org.junit.jupiter.api.Test;
@@ -32,6 +35,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.startsWith;
@@ -108,6 +112,7 @@ class OrderControllerTest {
                                 {"lines":[{"sku":"KB-01","quantity":101}]}
                                 """))
                 .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
                 .andExpect(jsonPath("$.detail", containsString("lines[0].quantity")));
     }
 
@@ -151,16 +156,21 @@ class OrderControllerTest {
         when(getOrders.getById(eq(order.id()), eq("viktor"))).thenThrow(new OrderNotFoundException(order.id()));
 
         mvc.perform(get("/api/orders/{id}", order.id().value()).with(jwt().jwt(j -> j.subject("viktor"))))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("ORDER_NOT_FOUND"))
+                .andExpect(jsonPath("$.params").doesNotExist());
     }
 
     @Test
     void cancelarUnPedidoNoPendienteDevuelve409() throws Exception {
         OrderId id = OrderId.newId();
-        when(cancelOrder.cancel(eq(id), eq("viktor"))).thenThrow(new InvalidOrderStateException("no"));
+        when(cancelOrder.cancel(eq(id), eq("viktor")))
+                .thenThrow(new InvalidOrderStateException("no", OrderStatus.CONFIRMED));
 
         mvc.perform(post("/api/orders/{id}/cancel", id.value()).with(jwt().jwt(j -> j.subject("viktor"))))
-                .andExpect(status().isConflict());
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("ORDER_NOT_PENDING"))
+                .andExpect(jsonPath("$.params.status").value("CONFIRMED"));
     }
 
     @Test
@@ -171,7 +181,24 @@ class OrderControllerTest {
 
         mvc.perform(post("/api/orders/{id}/cancel", id.value()).with(jwt().jwt(j -> j.subject("viktor"))))
                 .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.detail", containsString("ha cambiado")));
+                .andExpect(jsonPath("$.code").value("CONCURRENT_UPDATE"));
+    }
+
+    @Test
+    void unErrorDeDominioDevuelve400ConSuCodigoYSusDatos() throws Exception {
+        when(placeOrder.place(any())).thenThrow(new InvalidOrderException(OrderError.UNKNOWN_PRODUCT,
+                "Product XX-99 is not in the catalog", Map.of("sku", "XX-99")));
+
+        mvc.perform(post("/api/orders")
+                        .with(jwt().jwt(j -> j.subject("viktor")))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"lines":[{"sku":"XX-99","quantity":1}]}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("UNKNOWN_PRODUCT"))
+                .andExpect(jsonPath("$.params.sku").value("XX-99"))
+                .andExpect(jsonPath("$.detail").value("Product XX-99 is not in the catalog"));
     }
 
     @Test
@@ -184,6 +211,7 @@ class OrderControllerTest {
                         .content("""
                                 {"lines":[{"sku":"KB-01","quantity":1}]}
                                 """))
-                .andExpect(status().isServiceUnavailable());
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("CATALOG_UNAVAILABLE"));
     }
 }

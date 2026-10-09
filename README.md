@@ -21,8 +21,8 @@ This is a personal project to practice **Spring Boot**, **hexagonal architecture
 |---------|----------------|
 | ![Catalog](docs/screenshots/02-catalogo.png) | ![Pending order](docs/screenshots/05-detalle-pendiente.png) |
 
-More screenshots in [docs/screenshots](docs/screenshots/). The user interface and the specs are
-written in Spanish.
+More screenshots in [docs/screenshots](docs/screenshots/). The interface is available in English
+and Spanish, with a switch in the header.
 
 ---
 
@@ -100,8 +100,8 @@ An **ArchUnit** test checks this on every build.
 | Messaging | Apache Kafka (KRaft), Spring Kafka, transactional outbox, retries + dead-letter topic |
 | Persistence | PostgreSQL 16, Flyway, database per service |
 | Security | Spring Security, OAuth2 Resource Server, JWT |
-| API | OpenAPI 3 / Swagger UI (springdoc), RFC 7807 errors (Problem Details) |
-| Frontend | Vue 3 (Composition API, `<script setup>`), TypeScript, Pinia, Vue Router, Tailwind CSS, Vite |
+| API | OpenAPI 3 / Swagger UI (springdoc), RFC 7807 errors (Problem Details) with stable error codes |
+| Frontend | Vue 3 (Composition API, `<script setup>`), TypeScript, Pinia, Vue Router, vue-i18n (English / Spanish), Tailwind CSS, Vite |
 | Testing | JUnit 5, Mockito, AssertJ, MockMvc, **Testcontainers** (PostgreSQL + Kafka), Awaitility, ArchUnit, Vitest, Vue Test Utils |
 | DevOps | Multi-stage Docker, Docker Compose, GitHub Actions (CI), JaCoCo |
 
@@ -116,6 +116,7 @@ An **ArchUnit** test checks this on every build.
 - **Concurrency on orders:** optimistic locking (`@Version`). If a cancellation and a confirmation collide, the first one wins and the other gets a `409`.
 - **Event ordering:** the message key is the `orderId`, so every event of an order goes to the same partition.
 - **Consumer errors:** 3 retries, then the message goes to a declared dead-letter topic and an error is logged.
+- **The backend identifies errors, the interface translates them:** every error response carries a stable `code` (plus `params` when the message has data), and the reason an order is rejected is a code too. The interface turns them into text in English or Spanish, and falls back to the English `detail` for a code it does not know. The domain never holds user-facing texts ([spec 007](specs/007-internationalization.md)).
 - **Secure by default:** the demo login and its JWT secret only exist with the `dev` profile. Without a profile, order-service requires `JWT_SECRET` and does not expose `/api/auth/token`. In production the services would be resource servers behind Keycloak/Auth0.
 
 ## Running it
@@ -171,7 +172,7 @@ cd frontend && npm test    # Vitest
 - **Web:** `@WebMvcTest` with the real security configuration: valid tokens, expired tokens and tokens signed with another key; validation, 401, 404, 409 and 503.
 - **Architecture:** ArchUnit checks that the domain does not depend on frameworks or on other layers.
 - **Integration:** `@SpringBootTest` with a real PostgreSQL and Kafka in Testcontainers. They test the outbox end to end, idempotency against duplicates, stock release (including a cancellation that arrives before its order) and that concurrent reservations do not oversell.
-- **Frontend:** stores, HTTP client, router guard, polling with fake timers, and components.
+- **Frontend:** stores, HTTP client, router guard, polling with fake timers, components, and the translation of errors and texts in both languages.
 
 The GitHub Actions CI runs everything on every push and builds the Docker images.
 
@@ -185,8 +186,8 @@ The project was built with **Spec Driven Development** and **Claude Code** as th
 
 Two examples of how the agent was used beyond writing code:
 
-- **Reviewing my own design.** An audit with the agent found flaws the tests did not cover: a cancellation left the stock deducted, and an event could be lost if the service crashed right after the commit. The stock leak was first reproduced against the running system, and both were fixed with their own spec ([004](specs/004-cancelacion-y-liberacion-de-stock.md), [005](specs/005-outbox-transaccional.md)) and tests.
-- **Interface design.** The screens were prototyped in **Claude Design** (a canvas with the five views, generated from Claude Code) and then implemented in Vue 3 + Tailwind ([spec 006](specs/006-rediseno-interfaz.md)). The result was checked with automated screenshots on desktop and mobile, which are the ones in this README.
+- **Reviewing my own design.** An audit with the agent found flaws the tests did not cover: a cancellation left the stock deducted, and an event could be lost if the service crashed right after the commit. The stock leak was first reproduced against the running system, and both were fixed with their own spec ([004](specs/004-cancellation-and-stock-release.md), [005](specs/005-transactional-outbox.md)) and tests.
+- **Interface design.** The screens were prototyped in **Claude Design** (a canvas with the five views, generated from Claude Code) and then implemented in Vue 3 + Tailwind ([spec 006](specs/006-interface-redesign.md)). The result was checked with automated screenshots on desktop and mobile, which are the ones in this README.
 
 AI speeds up the implementation. The design decisions, the review and the responsibility for the
 code are mine.

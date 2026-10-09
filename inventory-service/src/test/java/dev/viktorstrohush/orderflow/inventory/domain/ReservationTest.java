@@ -40,6 +40,6 @@ class ReservationTest {
         reservation.release();
 
         assertThat(reservation.result().reserved()).isFalse();
-        assertThat(reservation.result().reason()).contains("cancelación");
+        assertThat(reservation.result().reason()).isEqualTo("RELEASED_BY_CANCELLATION");
     }
 }

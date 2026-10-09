@@ -53,7 +53,7 @@ public final class Reservation {
             throw new IllegalStateException("La reserva del pedido " + orderId + " no tiene stock que liberar (" + status + ")");
         }
         this.status = Status.RELEASED;
-        this.reason = "Reserva liberada por la cancelación del pedido";
+        this.reason = RejectionReason.RELEASED_BY_CANCELLATION;
     }
 
     /** Lo que se comunica a order-service: reservado o no, y por qué. */

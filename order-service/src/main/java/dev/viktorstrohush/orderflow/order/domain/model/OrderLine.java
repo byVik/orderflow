@@ -1,8 +1,10 @@
 package dev.viktorstrohush.orderflow.order.domain.model;
 
 import dev.viktorstrohush.orderflow.order.domain.exception.InvalidOrderException;
+import dev.viktorstrohush.orderflow.order.domain.exception.OrderError;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 public record OrderLine(String sku, int quantity, BigDecimal unitPrice) {
 
@@ -10,16 +12,20 @@ public record OrderLine(String sku, int quantity, BigDecimal unitPrice) {
 
     public OrderLine {
         if (sku == null || sku.isBlank()) {
-            throw new InvalidOrderException("El SKU es obligatorio");
+            throw new InvalidOrderException(OrderError.SKU_REQUIRED, "The SKU is required");
         }
         if (quantity <= 0) {
-            throw new InvalidOrderException("La cantidad debe ser mayor que 0 (SKU " + sku + ")");
+            throw new InvalidOrderException(OrderError.QUANTITY_NOT_POSITIVE,
+                    "The quantity must be greater than 0 (SKU " + sku + ")", Map.of("sku", sku));
         }
         if (quantity > MAX_QUANTITY) {
-            throw new InvalidOrderException("La cantidad máxima por línea es " + MAX_QUANTITY + " (SKU " + sku + ")");
+            throw new InvalidOrderException(OrderError.QUANTITY_ABOVE_MAX,
+                    "The maximum quantity per line is " + MAX_QUANTITY + " (SKU " + sku + ")",
+                    Map.of("sku", sku, "max", MAX_QUANTITY));
         }
         if (unitPrice == null || unitPrice.signum() < 0) {
-            throw new InvalidOrderException("El precio unitario no puede ser negativo (SKU " + sku + ")");
+            throw new InvalidOrderException(OrderError.NEGATIVE_PRICE,
+                    "The unit price cannot be negative (SKU " + sku + ")", Map.of("sku", sku));
         }
     }
 

@@ -1,5 +1,7 @@
 # 002 · Reserva de stock (saga coreografiada)
 
+[English](../002-stock-reservation.md) · **Español**
+
 ## Contexto
 inventory-service escucha `OrderPlaced`, intenta reservar el stock y publica el resultado en
 `inventory.stock-result.v1`. order-service consume ese resultado y actualiza el pedido.

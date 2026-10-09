@@ -9,7 +9,7 @@ describe('OrderTimeline', () => {
     const wrapper = mount(OrderTimeline, { props: { status: 'PENDING' } })
 
     expect(kinds(wrapper)).toEqual(['done', 'active', 'idle'])
-    expect(wrapper.text()).toContain('Reservando stock')
+    expect(wrapper.text()).toContain('Reserving stock')
   })
 
   it('confirmado: los tres pasos completados', () => {
@@ -18,18 +18,24 @@ describe('OrderTimeline', () => {
     expect(kinds(wrapper)).toEqual(['done', 'done', 'done'])
   })
 
-  it('rechazado: muestra el motivo que envía inventario', () => {
+  it('rechazado: traduce el código de motivo que envía inventario', () => {
+    const wrapper = mount(OrderTimeline, { props: { status: 'REJECTED', rejectionReason: 'INSUFFICIENT_STOCK' } })
+
+    expect(kinds(wrapper)).toEqual(['done', 'failed', 'failed'])
+    expect(wrapper.text()).toContain('There was not enough stock')
+  })
+
+  it('rechazado: un motivo que no es un código conocido se muestra tal cual', () => {
     const wrapper = mount(OrderTimeline, {
       props: { status: 'REJECTED', rejectionReason: 'Stock insuficiente de MC-01 (disponible 3)' },
     })
 
-    expect(kinds(wrapper)).toEqual(['done', 'failed', 'failed'])
     expect(wrapper.text()).toContain('Stock insuficiente de MC-01')
   })
 
   it('cancelado: avisa de que el stock reservado se devuelve', () => {
     const wrapper = mount(OrderTimeline, { props: { status: 'CANCELLED' } })
 
-    expect(wrapper.text()).toContain('el stock se devuelve')
+    expect(wrapper.text()).toContain('it is returned')
   })
 })

@@ -2,8 +2,10 @@ package dev.viktorstrohush.orderflow.order.domain.exception;
 
 import dev.viktorstrohush.orderflow.order.domain.model.OrderId;
 
-public class OrderNotFoundException extends RuntimeException {
+import java.util.Map;
+
+public class OrderNotFoundException extends OrderException {
     public OrderNotFoundException(OrderId id) {
-        super("Pedido no encontrado: " + id);
+        super(OrderError.ORDER_NOT_FOUND, "Order not found: " + id, Map.of());
     }
 }

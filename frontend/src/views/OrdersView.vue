@@ -1,11 +1,14 @@
 <script setup lang="ts">
+import { useI18n } from 'vue-i18n'
 import { useOrdersStore } from '@/stores/orders'
 import OrderStatusBadge from '@/components/OrderStatusBadge.vue'
 import { usePolling } from '@/composables/usePolling'
+import { errorMessage } from '@/i18n/errors'
 import { formatDate, formatPrice, formatUnits, shortId } from '@/utils/format'
 import type { Order } from '@/api/types'
 
 const store = useOrdersStore()
+const { t } = useI18n()
 usePolling(store.fetchAll, store.hasPending)
 
 const units = (order: Order) => order.lines.reduce((sum, line) => sum + line.quantity, 0)
@@ -14,16 +17,16 @@ const units = (order: Order) => order.lines.reduce((sum, line) => sum + line.qua
 <template>
   <main class="page">
     <div class="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
-      <h1 class="text-[32px] font-bold tracking-tight">Mis pedidos</h1>
-      <p class="text-[15px] text-muted">Se actualiza solo mientras haya pedidos pendientes</p>
+      <h1 class="text-[32px] font-bold tracking-tight">{{ t('orders.title') }}</h1>
+      <p class="text-[15px] text-muted">{{ t('orders.autoRefresh') }}</p>
     </div>
-    <p v-if="store.error" class="alert mt-7" role="alert">{{ store.error }}</p>
+    <p v-if="store.error" class="alert mt-7" role="alert">{{ errorMessage(store.error) }}</p>
     <div
       v-else-if="!store.loading && store.orders.length === 0"
       class="mt-7 rounded-xl border border-dashed border-line-strong p-10 text-center text-muted"
     >
-      Todavía no has hecho ningún pedido.
-      <RouterLink to="/catalog" class="font-semibold text-brand-700 underline">Ver catálogo</RouterLink>
+      {{ t('orders.empty') }}
+      <RouterLink to="/catalog" class="font-semibold text-brand-700 underline">{{ t('common.browseCatalog') }}</RouterLink>
     </div>
     <ul v-else class="mt-7 flex flex-col gap-3">
       <li v-for="order in store.orders" :key="order.id">

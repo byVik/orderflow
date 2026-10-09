@@ -1,7 +1,13 @@
 package dev.viktorstrohush.orderflow.order.domain.exception;
 
-public class InvalidOrderException extends RuntimeException {
-    public InvalidOrderException(String message) {
-        super(message);
+import java.util.Map;
+
+public class InvalidOrderException extends OrderException {
+    public InvalidOrderException(OrderError code, String message) {
+        this(code, message, Map.of());
+    }
+
+    public InvalidOrderException(OrderError code, String message, Map<String, Object> params) {
+        super(code, message, params);
     }
 }

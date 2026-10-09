@@ -6,7 +6,8 @@ import type { Order } from '@/api/types'
 export const useOrdersStore = defineStore('orders', () => {
   const orders = ref<Order[]>([])
   const loading = ref(false)
-  const error = ref<string | null>(null)
+  // El error tal cual, no su texto: la vista lo traduce al idioma actual.
+  const error = ref<unknown>(null)
 
   const hasPending = () => orders.value.some((o) => o.status === 'PENDING')
 
@@ -16,7 +17,7 @@ export const useOrdersStore = defineStore('orders', () => {
     try {
       orders.value = await api.orders()
     } catch (e) {
-      error.value = (e as Error).message
+      error.value = e
     } finally {
       loading.value = false
     }

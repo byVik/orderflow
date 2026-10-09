@@ -3,12 +3,14 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import { router } from './router'
 import { configureHttp } from './api/http'
+import { i18n } from './i18n'
 import { useAuthStore } from './stores/auth'
 import './style.css'
 
 const app = createApp(App)
 app.use(createPinia())
 app.use(router)
+app.use(i18n)
 
 const auth = useAuthStore()
 configureHttp(

@@ -18,6 +18,6 @@ describe('ProductCard', () => {
 
   it('indica cuando no hay stock', () => {
     const wrapper = mount(ProductCard, { props: { product: { ...product, availableQuantity: 0 }, inCart: 0 } })
-    expect(wrapper.text()).toContain('Sin stock')
+    expect(wrapper.text()).toContain('Out of stock')
   })
 })

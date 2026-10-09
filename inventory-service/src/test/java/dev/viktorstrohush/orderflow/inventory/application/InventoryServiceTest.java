@@ -82,7 +82,7 @@ class InventoryServiceTest {
         ReservationResult result = service.reserve(request(orderId, "KB-01", 2));
 
         assertThat(result.reserved()).isFalse();
-        assertThat(result.reason()).contains("Stock insuficiente de KB-01");
+        assertThat(result.reason()).isEqualTo("INSUFFICIENT_STOCK");
         assertThat(keyboard.availableQuantity()).isEqualTo(1);
         verify(products, never()).saveAll(any());
     }

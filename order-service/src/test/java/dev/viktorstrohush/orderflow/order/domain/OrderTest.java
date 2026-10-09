@@ -2,6 +2,7 @@ package dev.viktorstrohush.orderflow.order.domain;
 
 import dev.viktorstrohush.orderflow.order.domain.exception.InvalidOrderException;
 import dev.viktorstrohush.orderflow.order.domain.exception.InvalidOrderStateException;
+import dev.viktorstrohush.orderflow.order.domain.exception.OrderError;
 import dev.viktorstrohush.orderflow.order.domain.model.Order;
 import dev.viktorstrohush.orderflow.order.domain.model.OrderLine;
 import dev.viktorstrohush.orderflow.order.domain.model.OrderStatus;
@@ -41,8 +42,8 @@ class OrderTest {
         @Test
         void rechazaSkusDuplicados() {
             assertThatThrownBy(() -> Order.place("viktor", List.of(line("KB-01", 1, "1"), line("KB-01", 2, "1"))))
-                    .isInstanceOf(InvalidOrderException.class)
-                    .hasMessageContaining("repetidos");
+                    .isInstanceOfSatisfying(InvalidOrderException.class,
+                            e -> assertThat(e.code()).isEqualTo(OrderError.DUPLICATE_SKU));
         }
 
         @Test
@@ -55,8 +56,10 @@ class OrderTest {
         void rechazaCantidadesPorEncimaDelMaximoPorLinea() {
             assertThat(line("KB-01", OrderLine.MAX_QUANTITY, "1").quantity()).isEqualTo(100);
             assertThatThrownBy(() -> line("KB-01", OrderLine.MAX_QUANTITY + 1, "1"))
-                    .isInstanceOf(InvalidOrderException.class)
-                    .hasMessageContaining("máxima");
+                    .isInstanceOfSatisfying(InvalidOrderException.class, e -> {
+                        assertThat(e.code()).isEqualTo(OrderError.QUANTITY_ABOVE_MAX);
+                        assertThat(e.params()).containsEntry("sku", "KB-01").containsEntry("max", 100);
+                    });
         }
     }
 
@@ -82,7 +85,11 @@ class OrderTest {
         void noSePuedeCancelarUnPedidoConfirmado() {
             Order order = Order.place("viktor", List.of(line("KB-01", 1, "10")));
             order.confirm();
-            assertThatThrownBy(order::cancel).isInstanceOf(InvalidOrderStateException.class);
+            assertThatThrownBy(order::cancel)
+                    .isInstanceOfSatisfying(InvalidOrderStateException.class, e -> {
+                        assertThat(e.code()).isEqualTo(OrderError.ORDER_NOT_PENDING);
+                        assertThat(e.params()).containsEntry("status", "CONFIRMED");
+                    });
         }
     }
 }

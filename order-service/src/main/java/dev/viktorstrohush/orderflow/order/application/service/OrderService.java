@@ -8,6 +8,7 @@ import dev.viktorstrohush.orderflow.order.application.port.out.OrderEventPublish
 import dev.viktorstrohush.orderflow.order.application.port.out.OrderRepository;
 import dev.viktorstrohush.orderflow.order.application.port.out.ProductCatalog;
 import dev.viktorstrohush.orderflow.order.domain.exception.InvalidOrderException;
+import dev.viktorstrohush.orderflow.order.domain.exception.OrderError;
 import dev.viktorstrohush.orderflow.order.domain.exception.OrderNotFoundException;
 import dev.viktorstrohush.orderflow.order.domain.model.Order;
 import dev.viktorstrohush.orderflow.order.domain.model.OrderId;
@@ -69,7 +70,8 @@ public class OrderService implements PlaceOrderUseCase, GetOrdersQuery, CancelOr
                 .map(l -> {
                     BigDecimal price = prices.get(l.sku());
                     if (price == null) {
-                        throw new InvalidOrderException("El producto " + l.sku() + " no existe en el catálogo");
+                        throw new InvalidOrderException(OrderError.UNKNOWN_PRODUCT,
+                                "Product " + l.sku() + " is not in the catalog", Map.of("sku", l.sku()));
                     }
                     return new OrderLine(l.sku(), l.quantity(), price);
                 })

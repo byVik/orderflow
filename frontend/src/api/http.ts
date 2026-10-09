@@ -1,12 +1,17 @@
-import type { ProblemDetail } from './types'
+import type { ProblemDetail, ProblemParams } from './types'
 
 export class ApiError extends Error {
   readonly status: number
+  /** Código estable del error: lo envía el backend, o lo pone este cliente (SESSION_EXPIRED, NETWORK). */
+  readonly code?: string
+  readonly params?: ProblemParams
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, code?: string, params?: ProblemParams) {
     super(message)
     this.name = 'ApiError'
     this.status = status
+    this.code = code
+    this.params = params
   }
 }
 
@@ -29,24 +34,32 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
   const token = getToken()
   if (token) headers.set('Authorization', `Bearer ${token}`)
 
-  const response = await fetch(path, { ...init, headers })
+  let response: Response
+  try {
+    response = await fetch(path, { ...init, headers })
+  } catch {
+    // fetch solo rechaza la promesa cuando no llega a haber respuesta: sin red o servidor caído.
+    throw new ApiError(0, 'Network error', 'NETWORK')
+  }
 
   if (response.status === 401) {
     onUnauthorized()
-    throw new ApiError(401, 'Tu sesión ha caducado. Vuelve a entrar.')
+    throw new ApiError(401, 'Session expired', 'SESSION_EXPIRED')
   }
   if (!response.ok) {
-    throw new ApiError(response.status, await errorMessage(response))
+    throw await toApiError(response)
   }
   if (response.status === 204) return undefined as T
   return (await response.json()) as T
 }
 
-async function errorMessage(response: Response): Promise<string> {
+/** El mensaje es el respaldo en inglés; lo que se enseña al usuario se traduce por el código. */
+async function toApiError(response: Response): Promise<ApiError> {
+  const fallback = `Error ${response.status}`
   try {
     const problem = (await response.json()) as ProblemDetail
-    return problem.detail ?? problem.title ?? `Error ${response.status}`
+    return new ApiError(response.status, problem.detail ?? problem.title ?? fallback, problem.code, problem.params)
   } catch {
-    return `Error ${response.status}`
+    return new ApiError(response.status, fallback)
   }
 }

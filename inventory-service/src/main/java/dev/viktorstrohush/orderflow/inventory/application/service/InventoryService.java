@@ -7,6 +7,7 @@ import dev.viktorstrohush.orderflow.inventory.application.port.out.ProductReposi
 import dev.viktorstrohush.orderflow.inventory.application.port.out.ReservationRepository;
 import dev.viktorstrohush.orderflow.inventory.application.port.out.StockEventPublisher;
 import dev.viktorstrohush.orderflow.inventory.domain.model.Product;
+import dev.viktorstrohush.orderflow.inventory.domain.model.RejectionReason;
 import dev.viktorstrohush.orderflow.inventory.domain.model.Reservation;
 import dev.viktorstrohush.orderflow.inventory.domain.model.ReservationRequest;
 import dev.viktorstrohush.orderflow.inventory.domain.model.ReservationResult;
@@ -25,8 +26,6 @@ import java.util.stream.Collectors;
 public class InventoryService implements ReserveStockUseCase, ReleaseStockUseCase, ListProductsQuery {
 
     private static final Logger log = LoggerFactory.getLogger(InventoryService.class);
-
-    static final String CANCELLED_BEFORE_RESERVING = "Pedido cancelado antes de reservar el stock";
 
     private final ProductRepository products;
     private final ReservationRepository reservations;
@@ -75,7 +74,7 @@ public class InventoryService implements ReserveStockUseCase, ReleaseStockUseCas
         if (found.isEmpty()) {
             // OrderCancelled y OrderPlaced viajan por topics distintos y Kafka no garantiza orden
             // entre ellos. Se deja constancia para que ese OrderPlaced, cuando llegue, no reserve nada.
-            reservations.save(Reservation.rejected(orderId, CANCELLED_BEFORE_RESERVING));
+            reservations.save(Reservation.rejected(orderId, RejectionReason.CANCELLED_BEFORE_RESERVING));
             log.info("Pedido {} cancelado antes de procesar su reserva", orderId);
             return;
         }
@@ -99,15 +98,18 @@ public class InventoryService implements ReserveStockUseCase, ReleaseStockUseCas
                 .collect(Collectors.toMap(Product::sku, Function.identity()));
     }
 
+    /** El motivo es un código; el detalle (qué producto, cuánto había) queda en el log. */
     private static Optional<String> firstProblem(ReservationRequest request, Map<String, Product> bySku) {
         for (ReservationRequest.Item item : request.items()) {
             Product product = bySku.get(item.sku());
             if (product == null) {
-                return Optional.of("Producto desconocido: " + item.sku());
+                log.info("Pedido {}: producto desconocido {}", request.orderId(), item.sku());
+                return Optional.of(RejectionReason.UNKNOWN_PRODUCT);
             }
             if (!product.canReserve(item.quantity())) {
-                return Optional.of("Stock insuficiente de " + item.sku()
-                        + " (disponible " + product.availableQuantity() + ")");
+                log.info("Pedido {}: stock insuficiente de {} (pedido {}, disponible {})", request.orderId(),
+                        item.sku(), item.quantity(), product.availableQuantity());
+                return Optional.of(RejectionReason.INSUFFICIENT_STOCK);
             }
         }
         return Optional.empty();

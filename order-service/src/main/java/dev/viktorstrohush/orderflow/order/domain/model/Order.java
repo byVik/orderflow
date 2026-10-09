@@ -2,6 +2,7 @@ package dev.viktorstrohush.orderflow.order.domain.model;
 
 import dev.viktorstrohush.orderflow.order.domain.exception.InvalidOrderException;
 import dev.viktorstrohush.orderflow.order.domain.exception.InvalidOrderStateException;
+import dev.viktorstrohush.orderflow.order.domain.exception.OrderError;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -34,14 +35,14 @@ public final class Order {
     /** Crea un pedido nuevo en estado PENDING. */
     public static Order place(String customerId, List<OrderLine> lines) {
         if (customerId == null || customerId.isBlank()) {
-            throw new InvalidOrderException("El cliente es obligatorio");
+            throw new InvalidOrderException(OrderError.CUSTOMER_REQUIRED, "The customer is required");
         }
         if (lines == null || lines.isEmpty()) {
-            throw new InvalidOrderException("El pedido debe tener al menos una línea");
+            throw new InvalidOrderException(OrderError.ORDER_EMPTY, "The order must have at least one line");
         }
         long distinctSkus = lines.stream().map(OrderLine::sku).distinct().count();
         if (distinctSkus != lines.size()) {
-            throw new InvalidOrderException("No puede haber SKUs repetidos en el pedido");
+            throw new InvalidOrderException(OrderError.DUPLICATE_SKU, "An order cannot repeat a SKU");
         }
         return new Order(OrderId.newId(), customerId, lines, OrderStatus.PENDING, null, Instant.now());
     }
@@ -53,18 +54,18 @@ public final class Order {
     }
 
     public void confirm() {
-        requireStatus(OrderStatus.PENDING, "confirmar");
+        requireStatus(OrderStatus.PENDING, "confirm");
         this.status = OrderStatus.CONFIRMED;
     }
 
     public void reject(String reason) {
-        requireStatus(OrderStatus.PENDING, "rechazar");
+        requireStatus(OrderStatus.PENDING, "reject");
         this.status = OrderStatus.REJECTED;
         this.rejectionReason = reason;
     }
 
     public void cancel() {
-        requireStatus(OrderStatus.PENDING, "cancelar");
+        requireStatus(OrderStatus.PENDING, "cancel");
         this.status = OrderStatus.CANCELLED;
     }
 
@@ -79,7 +80,7 @@ public final class Order {
     private void requireStatus(OrderStatus expected, String action) {
         if (status != expected) {
             throw new InvalidOrderStateException(
-                    "No se puede " + action + " el pedido " + id + " en estado " + status);
+                    "Cannot " + action + " order " + id + " in status " + status, status);
         }
     }
 

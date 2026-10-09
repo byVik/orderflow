@@ -1,21 +1,24 @@
-# Especificaciones (Spec Driven Development)
+# Specifications (Spec Driven Development)
 
-Cada funcionalidad empieza aquí, como especificación, antes de escribir código. La spec define
-el comportamiento esperado y los criterios de aceptación. Esos criterios son la base de los tests
-y el contexto que se da a los agentes de IA (Claude Code) para implementar.
+**English** · [Español](es/README.md)
 
-| Spec | Estado |
+Every feature starts here, as a specification, before any code is written. The spec defines
+the expected behavior and the acceptance criteria. Those criteria are the basis for the tests
+and the context given to the AI agents (Claude Code) to implement it.
+
+| Spec | Status |
 |------|--------|
-| [001 · Crear pedido](001-crear-pedido.md) | ✅ Implementada |
-| [002 · Reserva de stock](002-reserva-stock.md) | ✅ Implementada |
-| [003 · Flujo de compra en el frontend](003-frontend-flujo-compra.md) | ✅ Implementada |
-| [004 · Cancelación y liberación de stock](004-cancelacion-y-liberacion-de-stock.md) | ✅ Implementada |
-| [005 · Outbox transaccional](005-outbox-transaccional.md) | ✅ Implementada |
-| [006 · Rediseño de la interfaz](006-rediseno-interfaz.md) | ✅ Implementada |
+| [001 · Place order](001-place-order.md) | ✅ Implemented |
+| [002 · Stock reservation](002-stock-reservation.md) | ✅ Implemented |
+| [003 · Frontend purchase flow](003-frontend-purchase-flow.md) | ✅ Implemented |
+| [004 · Cancellation and stock release](004-cancellation-and-stock-release.md) | ✅ Implemented |
+| [005 · Transactional outbox](005-transactional-outbox.md) | ✅ Implemented |
+| [006 · Interface redesign](006-interface-redesign.md) | ✅ Implemented |
+| [007 · Internationalization and error codes](007-internationalization.md) | ✅ Implemented |
 
-Flujo de trabajo:
+Workflow:
 
-1. Escribir o actualizar la spec (contexto, reglas, criterios de aceptación).
-2. Traducir los criterios a tests.
-3. Implementar con ayuda del agente, usando la spec como contexto.
-4. Revisar el código generado, pasar los tests y marcar la spec como implementada.
+1. Write or update the spec (context, rules, acceptance criteria).
+2. Translate the criteria into tests.
+3. Implement with the agent's help, using the spec as context.
+4. Review the generated code, pass the tests and mark the spec as implemented.

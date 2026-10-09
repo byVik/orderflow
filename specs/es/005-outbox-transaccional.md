@@ -1,5 +1,7 @@
 # 005 · Outbox transaccional
 
+[English](../005-transactional-outbox.md) · **Español**
+
 ## Contexto
 Los eventos se publicaban en Kafka justo después del commit. Si el servicio caía entre el commit y
 el envío, o Kafka no estaba disponible, el evento se perdía y el pedido quedaba `PENDING` para
