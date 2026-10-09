@@ -6,31 +6,34 @@
 ![Kafka](https://img.shields.io/badge/Apache%20Kafka-event--driven-231F20)
 ![Vue 3](https://img.shields.io/badge/Vue-3%20%2B%20TypeScript-42b883)
 
-Gestión de pedidos con **microservicios event-driven**. Un usuario crea un pedido, el servicio de
-inventario reserva el stock de forma asíncrona a través de **Kafka** y el pedido pasa a confirmado
-o rechazado. Si el usuario cancela, el stock reservado se devuelve. Incluye un frontend en
-**Vue 3 + TypeScript**.
+**English** · [Español](README.es.md)
 
-Es un proyecto personal para practicar **Spring Boot**, **arquitectura hexagonal / DDD** y
-**mensajería con Kafka**, desarrollado con un flujo de **Spec Driven Development asistido por IA**
-(ver [Desarrollo con IA](#desarrollo-con-ia-y-sdd)).
+Order management built as **event-driven microservices**. A user places an order, the inventory
+service reserves the stock asynchronously through **Kafka**, and the order ends up confirmed or
+rejected. If the user cancels, the reserved stock is released. It includes a
+**Vue 3 + TypeScript** frontend.
 
-| Catálogo | Seguimiento del pedido |
-|----------|------------------------|
-| ![Catálogo](docs/screenshots/02-catalogo.png) | ![Pedido pendiente](docs/screenshots/05-detalle-pendiente.png) |
+This is a personal project to practice **Spring Boot**, **hexagonal architecture / DDD** and
+**messaging with Kafka**, built with an **AI-assisted Spec Driven Development** workflow
+(see [AI-assisted development and SDD](#ai-assisted-development-and-sdd)).
 
-Más capturas en [docs/screenshots](docs/screenshots/).
+| Catalog | Order tracking |
+|---------|----------------|
+| ![Catalog](docs/screenshots/02-catalogo.png) | ![Pending order](docs/screenshots/05-detalle-pendiente.png) |
+
+More screenshots in [docs/screenshots](docs/screenshots/). The user interface and the specs are
+written in Spanish.
 
 ---
 
-## Arquitectura
+## Architecture
 
 ```mermaid
 flowchart LR
-    U([Usuario]) --> FE[Frontend<br/>Vue 3 + TS]
+    U([User]) --> FE[Frontend<br/>Vue 3 + TS]
     FE -- REST + JWT --> OS[order-service<br/>Spring Boot]
     FE -- REST --> IS[inventory-service<br/>Spring Boot]
-    OS -- precios del catálogo --> IS
+    OS -- catalog prices --> IS
     OS -- OrderPlaced / OrderCancelled --> K[(Kafka)]
     K -- OrderPlaced / OrderCancelled --> IS
     IS -- StockResult --> K
@@ -39,7 +42,7 @@ flowchart LR
     IS --- DB2[(PostgreSQL<br/>inventory + outbox)]
 ```
 
-**Flujo de un pedido (saga coreografiada):**
+**Order flow (choreographed saga):**
 
 ```mermaid
 sequenceDiagram
@@ -48,102 +51,102 @@ sequenceDiagram
     participant K as Kafka
     participant IS as inventory-service
     FE->>OS: POST /api/orders
-    OS->>IS: GET /api/products?skus=… (precios, fuera de la transacción)
-    OS->>OS: guarda pedido PENDING + evento en outbox (misma transacción)
+    OS->>IS: GET /api/products?skus=… (prices, outside the transaction)
+    OS->>OS: saves PENDING order + outbox event (same transaction)
     OS-->>FE: 201 Created
-    OS->>K: relay del outbox publica OrderPlaced
+    OS->>K: outbox relay publishes OrderPlaced
     K->>IS: OrderPlaced
-    IS->>IS: reserva todo o nada (SELECT … FOR UPDATE) + resultado en outbox
+    IS->>IS: all-or-nothing reservation (SELECT … FOR UPDATE) + result in outbox
     IS->>K: StockResult RESERVED / REJECTED
     K->>OS: StockResult
-    OS->>OS: pedido → CONFIRMED / REJECTED
+    OS->>OS: order → CONFIRMED / REJECTED
     FE->>OS: polling GET /api/orders/{id}
-    opt El usuario cancela un pedido pendiente
+    opt The user cancels a pending order
         FE->>OS: POST /api/orders/{id}/cancel
         OS->>K: OrderCancelled
         K->>IS: OrderCancelled
-        IS->>IS: devuelve el stock reservado (compensación)
+        IS->>IS: releases the reserved stock (compensation)
     end
 ```
 
-### Arquitectura hexagonal en cada servicio
+### Hexagonal architecture in each service
 
 ```
 order-service/src/main/java/.../order
-├── domain/                  # Modelo y reglas de negocio (sin Spring ni JPA)
-│   ├── model/               # Order (agregado), OrderLine, OrderId, OrderStatus
+├── domain/                  # Model and business rules (no Spring, no JPA)
+│   ├── model/               # Order (aggregate), OrderLine, OrderId, OrderStatus
 │   └── exception/
 ├── application/
-│   ├── port/in/             # Casos de uso: PlaceOrder, GetOrders, CancelOrder, ApplyStockResult
-│   ├── port/out/            # Lo que necesita el núcleo: OrderRepository, OrderEventPublisher, ProductCatalog
-│   └── service/             # Implementación de los casos de uso
+│   ├── port/in/             # Use cases: PlaceOrder, GetOrders, CancelOrder, ApplyStockResult
+│   ├── port/out/            # What the core needs: OrderRepository, OrderEventPublisher, ProductCatalog
+│   └── service/             # Use case implementations
 └── infrastructure/
-    ├── adapter/in/web/      # REST (controladores, DTOs, Problem Details)
-    ├── adapter/in/messaging/# Listener de Kafka
+    ├── adapter/in/web/      # REST (controllers, DTOs, Problem Details)
+    ├── adapter/in/messaging/# Kafka listener
     ├── adapter/out/persistence/ # JPA + Flyway
-    ├── adapter/out/messaging/   # Outbox y relay hacia Kafka
-    ├── adapter/out/catalog/     # Cliente REST de inventory-service
-    └── config/              # Seguridad, Kafka, OpenAPI, ensamblado de beans
+    ├── adapter/out/messaging/   # Outbox and relay to Kafka
+    ├── adapter/out/catalog/     # REST client for inventory-service
+    └── config/              # Security, Kafka, OpenAPI, bean wiring
 ```
 
-El dominio no conoce Spring: los adaptadores dependen del núcleo y nunca al revés. Un test de
-**ArchUnit** lo comprueba en cada build.
+The domain knows nothing about Spring: adapters depend on the core, never the other way around.
+An **ArchUnit** test checks this on every build.
 
 ## Stack
 
-| Capa | Tecnologías |
-|------|-------------|
+| Layer | Technologies |
+|-------|--------------|
 | Backend | Java 21, Spring Boot 3.5, Spring Web, Spring Data JPA / Hibernate, Bean Validation |
-| Mensajería | Apache Kafka (KRaft), Spring Kafka, outbox transaccional, reintentos + dead-letter topic |
-| Persistencia | PostgreSQL 16, Flyway, base de datos por servicio |
-| Seguridad | Spring Security, OAuth2 Resource Server, JWT |
-| API | OpenAPI 3 / Swagger UI (springdoc), errores RFC 7807 (Problem Details) |
+| Messaging | Apache Kafka (KRaft), Spring Kafka, transactional outbox, retries + dead-letter topic |
+| Persistence | PostgreSQL 16, Flyway, database per service |
+| Security | Spring Security, OAuth2 Resource Server, JWT |
+| API | OpenAPI 3 / Swagger UI (springdoc), RFC 7807 errors (Problem Details) |
 | Frontend | Vue 3 (Composition API, `<script setup>`), TypeScript, Pinia, Vue Router, Tailwind CSS, Vite |
 | Testing | JUnit 5, Mockito, AssertJ, MockMvc, **Testcontainers** (PostgreSQL + Kafka), Awaitility, ArchUnit, Vitest, Vue Test Utils |
-| DevOps | Docker multi-stage, Docker Compose, GitHub Actions (CI), JaCoCo |
+| DevOps | Multi-stage Docker, Docker Compose, GitHub Actions (CI), JaCoCo |
 
-## Decisiones técnicas
+## Technical decisions
 
-- **Hexagonal + DDD:** el agregado `Order` protege sus invariantes (sin líneas vacías, sin SKUs duplicados, entre 1 y 100 unidades por línea, transiciones de estado válidas). Los casos de uso son interfaces (puertos de entrada) y la infraestructura se enchufa por puertos de salida.
-- **El precio lo decide el backend:** el cliente solo envía `sku` y `quantity`. order-service consulta el catálogo, con *timeouts* y **fuera de la transacción** para no retener una conexión a la base de datos durante una llamada HTTP. Si el catálogo no responde: `503`.
-- **Outbox transaccional:** guardar en la base de datos y publicar en Kafka son dos escrituras sin transacción común. El evento se inserta en una tabla `outbox` en la misma transacción que el pedido y un *relay* lo publica después (`FOR UPDATE SKIP LOCKED`, espera la confirmación del broker). Ni eventos fantasma ni eventos perdidos. Los puertos no cambiaron: fue un cambio de adaptador.
-- **Compensación de la saga:** cancelar publica `OrderCancelled` e inventory devuelve el stock. Como entre topics distintos no hay orden garantizado, si la cancelación llega antes que el pedido queda registrada y ese pedido ya no reserva nada.
-- **Idempotencia:** inventory-service guarda cada reserva por `orderId` y lo comprueba después de tomar los bloqueos; la clave primaria es la red de seguridad. order-service ignora resultados para pedidos que ya no están `PENDING`.
-- **Sin sobreventa:** la reserva bloquea las filas de producto (`PESSIMISTIC_WRITE`) en orden de SKU para evitar interbloqueos. Es todo o nada, y hay un test con compradores simultáneos.
-- **Concurrencia en pedidos:** bloqueo optimista (`@Version`). Si cancelar y confirmar coinciden, gana el primero y el otro recibe un `409`.
-- **Orden de eventos:** la clave del mensaje es el `orderId`, así todos los eventos de un pedido van a la misma partición.
-- **Errores en consumidores:** 3 reintentos y después el mensaje va a un *dead-letter topic* declarado, dejando un log de error.
-- **Seguro por defecto:** el login de demo y su secreto JWT solo existen con el perfil `dev`. Sin perfil, order-service exige `JWT_SECRET` y no expone `/api/auth/token`. En producción los servicios serían resource servers de Keycloak/Auth0.
+- **Hexagonal + DDD:** the `Order` aggregate protects its invariants (no empty lines, no duplicate SKUs, between 1 and 100 units per line, valid state transitions). Use cases are interfaces (inbound ports) and the infrastructure plugs in through outbound ports.
+- **The backend decides the price:** the client only sends `sku` and `quantity`. order-service queries the catalog, with timeouts and **outside the transaction** so that no database connection is held during an HTTP call. If the catalog does not respond: `503`.
+- **Transactional outbox:** saving to the database and publishing to Kafka are two writes with no shared transaction. The event is inserted into an `outbox` table in the same transaction as the order, and a relay publishes it afterwards (`FOR UPDATE SKIP LOCKED`, waiting for the broker's acknowledgement). No phantom events and no lost events. The ports did not change: it was an adapter change.
+- **Saga compensation:** cancelling publishes `OrderCancelled` and inventory releases the stock. Since there is no ordering guarantee across different topics, a cancellation that arrives before its order is recorded, and that order no longer reserves anything.
+- **Idempotency:** inventory-service stores each reservation by `orderId` and checks it after taking the locks; the primary key is the safety net. order-service ignores results for orders that are no longer `PENDING`.
+- **No overselling:** the reservation locks the product rows (`PESSIMISTIC_WRITE`) in SKU order to avoid deadlocks. It is all or nothing, and there is a test with concurrent buyers.
+- **Concurrency on orders:** optimistic locking (`@Version`). If a cancellation and a confirmation collide, the first one wins and the other gets a `409`.
+- **Event ordering:** the message key is the `orderId`, so every event of an order goes to the same partition.
+- **Consumer errors:** 3 retries, then the message goes to a declared dead-letter topic and an error is logged.
+- **Secure by default:** the demo login and its JWT secret only exist with the `dev` profile. Without a profile, order-service requires `JWT_SECRET` and does not expose `/api/auth/token`. In production the services would be resource servers behind Keycloak/Auth0.
 
-## Cómo ejecutarlo
+## Running it
 
-### Todo con Docker
+### Everything with Docker
 
 ```bash
 docker compose up --build
 ```
 
-| Servicio | URL |
-|----------|-----|
+| Service | URL |
+|---------|-----|
 | Frontend | http://localhost:8080 |
 | Swagger order-service | http://localhost:8081/swagger-ui.html |
 | Swagger inventory-service | http://localhost:8082/swagger-ui.html |
 
-Entra con cualquier nombre de usuario, añade productos al carrito y haz un pedido. Para ver un
-rechazo, pide más unidades del micrófono (`MC-01`, solo hay 3). `docker compose down -v` borra
-los datos y deja el catálogo como al principio.
+Sign in with any username, add products to the cart and place an order. To see a rejection, order
+more units of the microphone than there are (`MC-01`, only 3 in stock). `docker compose down -v`
+wipes the data and resets the catalog.
 
-### Modo desarrollo
+### Development mode
 
 ```bash
-docker compose up -d postgres kafka                                   # infraestructura
-mvn install -DskipTests                                               # una vez: instala el módulo events
-mvn -pl inventory-service spring-boot:run                             # puerto 8082
-mvn -pl order-service spring-boot:run -Dspring-boot.run.profiles=dev  # puerto 8081, login de demo
-cd frontend && npm install && npm run dev                             # http://localhost:5173 (proxy a los servicios)
+docker compose up -d postgres kafka                                   # infrastructure
+mvn install -DskipTests                                               # once: installs the events module
+mvn -pl inventory-service spring-boot:run                             # port 8082
+mvn -pl order-service spring-boot:run -Dspring-boot.run.profiles=dev  # port 8081, demo login
+cd frontend && npm install && npm run dev                             # http://localhost:5173 (proxy to the services)
 ```
 
-### Probar la API con curl
+### Trying the API with curl
 
 ```bash
 TOKEN=$(curl -s -X POST localhost:8081/api/auth/token \
@@ -158,50 +161,49 @@ curl -s localhost:8081/api/orders -H "Authorization: Bearer $TOKEN"
 ## Tests
 
 ```bash
-mvn test                   # unitarios, web y arquitectura: rápidos, sin Docker
-mvn verify                 # además los de integración (necesita Docker para Testcontainers)
+mvn test                   # unit, web and architecture tests: fast, no Docker
+mvn verify                 # plus the integration tests (needs Docker for Testcontainers)
 cd frontend && npm test    # Vitest
 ```
 
-- **Dominio:** reglas de los agregados y transiciones de estado.
-- **Aplicación:** casos de uso con Mockito (precios del catálogo, propiedad del pedido, idempotencia, compensación).
-- **Web:** `@WebMvcTest` con la configuración de seguridad real: tokens válidos, caducados y firmados con otra clave; validación, 401, 404, 409 y 503.
-- **Arquitectura:** ArchUnit comprueba que el dominio no depende de frameworks ni de otras capas.
-- **Integración:** `@SpringBootTest` con PostgreSQL y Kafka reales en Testcontainers. Prueban el outbox de extremo a extremo, la idempotencia ante duplicados, la liberación de stock (incluida la cancelación que llega antes que el pedido) y que varias reservas simultáneas no venden de más.
-- **Frontend:** stores, cliente HTTP, guard del router, sondeo con temporizadores simulados y componentes.
+- **Domain:** aggregate rules and state transitions.
+- **Application:** use cases with Mockito (catalog prices, order ownership, idempotency, compensation).
+- **Web:** `@WebMvcTest` with the real security configuration: valid tokens, expired tokens and tokens signed with another key; validation, 401, 404, 409 and 503.
+- **Architecture:** ArchUnit checks that the domain does not depend on frameworks or on other layers.
+- **Integration:** `@SpringBootTest` with a real PostgreSQL and Kafka in Testcontainers. They test the outbox end to end, idempotency against duplicates, stock release (including a cancellation that arrives before its order) and that concurrent reservations do not oversell.
+- **Frontend:** stores, HTTP client, router guard, polling with fake timers, and components.
 
-La CI de GitHub Actions ejecuta todo en cada push y construye las imágenes Docker.
+The GitHub Actions CI runs everything on every push and builds the Docker images.
 
-## Desarrollo con IA y SDD
+## AI-assisted development and SDD
 
-El proyecto se ha desarrollado con **Spec Driven Development** y **Claude Code** como asistente:
+The project was built with **Spec Driven Development** and **Claude Code** as the assistant:
 
-1. Cada funcionalidad empieza como especificación en [`/specs`](specs/), con reglas y criterios de aceptación.
-2. Los criterios se convierten en tests.
-3. La implementación se hace con el agente, usando la spec como contexto, y **todo el código se revisa** antes de integrarlo.
+1. Every feature starts as a specification in [`/specs`](specs/), with rules and acceptance criteria.
+2. The criteria become tests.
+3. The implementation is done with the agent, using the spec as context, and **all the code is reviewed** before it is merged.
 
-Dos ejemplos de cómo se usó el agente más allá de escribir código:
+Two examples of how the agent was used beyond writing code:
 
-- **Revisión del propio diseño.** Una auditoría con el agente encontró fallos que los tests no cubrían: una cancelación dejaba el stock descontado, y un evento podía perderse si el servicio caía justo tras el commit. La fuga de stock se reprodujo primero contra el sistema en marcha, y los dos se resolvieron con su spec ([004](specs/004-cancelacion-y-liberacion-de-stock.md), [005](specs/005-outbox-transaccional.md)) y sus tests.
-- **Diseño de la interfaz.** Las pantallas se prototiparon en **Claude Design** (un lienzo con las cinco vistas, generado desde Claude Code) y después se implementaron en Vue 3 + Tailwind ([spec 006](specs/006-rediseno-interfaz.md)). El resultado se comprobó con capturas automáticas en escritorio y móvil, que son las de este README.
+- **Reviewing my own design.** An audit with the agent found flaws the tests did not cover: a cancellation left the stock deducted, and an event could be lost if the service crashed right after the commit. The stock leak was first reproduced against the running system, and both were fixed with their own spec ([004](specs/004-cancelacion-y-liberacion-de-stock.md), [005](specs/005-outbox-transaccional.md)) and tests.
+- **Interface design.** The screens were prototyped in **Claude Design** (a canvas with the five views, generated from Claude Code) and then implemented in Vue 3 + Tailwind ([spec 006](specs/006-rediseno-interfaz.md)). The result was checked with automated screenshots on desktop and mobile, which are the ones in this README.
 
-La IA acelera la implementación. Las decisiones de diseño, la revisión y la responsabilidad del
-código son mías.
+AI speeds up the implementation. The design decisions, the review and the responsibility for the
+code are mine.
 
-## Próximos pasos
+## Next steps
 
-- [ ] README en inglés.
-- [ ] Observabilidad: trazas distribuidas a través de Kafka (un pedido seguido de extremo a extremo), Micrometer + Prometheus + Grafana.
-- [ ] Endurecer el relay del outbox: acotar la espera del productor cuando Kafka no responde (`max.block.ms`) y purgar las filas ya publicadas.
-- [ ] Test de extremo a extremo con Playwright en la CI, sobre `docker compose up`.
-- [ ] Paginación en el listado de pedidos.
-- [ ] Keycloak como Identity Provider real (RS256, `issuer-uri`).
-- [ ] *Circuit breaker* en la consulta de precios, o una copia local de precios alimentada por eventos.
-- [ ] Contratos de eventos con Schema Registry (Avro o Protobuf).
-- [ ] Herramienta para reprocesar el dead-letter topic.
-- [ ] Análisis estático con SonarCloud en la CI.
+- [ ] Observability: distributed tracing across Kafka (one order followed end to end), Micrometer + Prometheus + Grafana.
+- [ ] Harden the outbox relay: bound the producer's wait when Kafka does not respond (`max.block.ms`) and purge rows that are already published.
+- [ ] End-to-end test with Playwright in CI, on top of `docker compose up`.
+- [ ] Pagination in the order list.
+- [ ] Keycloak as a real Identity Provider (RS256, `issuer-uri`).
+- [ ] Circuit breaker on the price lookup, or a local copy of prices fed by events.
+- [ ] Event contracts with Schema Registry (Avro or Protobuf).
+- [ ] A tool to reprocess the dead-letter topic.
+- [ ] Static analysis with SonarCloud in CI.
 
-## Autor
+## Author
 
 **Viktor Strohush Loyish** · Full Stack Developer (Java · Vue 3)
 [LinkedIn](https://www.linkedin.com/in/viktor-strohush-loyish)
