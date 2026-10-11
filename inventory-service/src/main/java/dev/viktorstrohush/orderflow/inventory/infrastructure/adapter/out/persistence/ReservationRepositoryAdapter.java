@@ -3,6 +3,7 @@ package dev.viktorstrohush.orderflow.inventory.infrastructure.adapter.out.persis
 import dev.viktorstrohush.orderflow.inventory.application.port.out.ReservationRepository;
 import dev.viktorstrohush.orderflow.inventory.domain.model.Reservation;
 import dev.viktorstrohush.orderflow.inventory.domain.model.ReservationRequest;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -11,13 +12,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Component
+@RequiredArgsConstructor
 class ReservationRepositoryAdapter implements ReservationRepository {
 
     private final SpringDataReservationRepository jpa;
-
-    ReservationRepositoryAdapter(SpringDataReservationRepository jpa) {
-        this.jpa = jpa;
-    }
 
     @Override
     public Optional<Reservation> find(UUID orderId) {

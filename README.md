@@ -111,7 +111,7 @@ Inside a feature, imports are relative; across features and into `shared/` they 
 
 | Layer | Technologies |
 |-------|--------------|
-| Backend | Java 21, Spring Boot 3.5, Spring Web, Spring Data JPA / Hibernate, Bean Validation |
+| Backend | Java 21, Spring Boot 3.5, Spring Web, Spring Data JPA / Hibernate, Bean Validation, Resilience4j (retry + circuit breaker), MapStruct, Lombok |
 | Messaging | Apache Kafka (KRaft), Spring Kafka, transactional outbox, retries + dead-letter topic |
 | Persistence | PostgreSQL 16, Flyway, database per service |
 | Security | Spring Security, OAuth2 Resource Server, JWT |
@@ -123,12 +123,14 @@ Inside a feature, imports are relative; across features and into `shared/` they 
 ## Technical decisions
 
 - **Hexagonal + DDD:** the `Order` aggregate protects its invariants (no empty lines, no duplicate SKUs, between 1 and 100 units per line, valid state transitions). Use cases are interfaces (inbound ports) and the infrastructure plugs in through outbound ports.
-- **The backend decides the price:** the client only sends `sku` and `quantity`. order-service queries the catalog, with timeouts and **outside the transaction** so that no database connection is held during an HTTP call. If the catalog does not respond: `503`.
+- **The backend decides the price:** the client only sends `sku` and `quantity`. order-service queries the catalog, with timeouts and **outside the transaction** so that no database connection is held during an HTTP call. A failed call is retried when a new attempt can help (no response or a `5xx`), and a **circuit breaker** stops calling a catalog that keeps failing, so the order requests fail fast instead of piling up on its timeout (Resilience4j, [spec 009](specs/009-resilient-catalog-client.md)). If the catalog does not respond: `503`.
 - **Transactional outbox:** saving to the database and publishing to Kafka are two writes with no shared transaction. The event is inserted into an `outbox` table in the same transaction as the order, and a relay publishes it afterwards (`FOR UPDATE SKIP LOCKED`, waiting for the broker's acknowledgement). No phantom events and no lost events. The ports did not change: it was an adapter change.
 - **Saga compensation:** cancelling publishes `OrderCancelled` and inventory releases the stock. Since there is no ordering guarantee across different topics, a cancellation that arrives before its order is recorded, and that order no longer reserves anything.
 - **Idempotency:** inventory-service stores each reservation by `orderId` and checks it after taking the locks; the primary key is the safety net. order-service ignores results for orders that are no longer `PENDING`.
 - **No overselling:** the reservation locks the product rows (`PESSIMISTIC_WRITE`) in SKU order to avoid deadlocks. It is all or nothing, and there is a test with concurrent buyers.
 - **Concurrency on orders:** optimistic locking (`@Version`). If a cancellation and a confirmation collide, the first one wins and the other gets a `409`.
+- **Paginated order list:** `GET /api/orders?page=0&size=10` returns one page and `hasNext`, with no total, so there is no `count` on every request. A page costs two queries whatever its size (the orders with `LIMIT`, then the lines of all of them in one batch), and an integration test counts them. The ports use their own `PageQuery` / `PageResult`: Spring Data's `Pageable` stays in the persistence adapter ([spec 008](specs/008-order-list-pagination.md)).
+- **Generated code only at the edges:** Lombok writes the getters and constructors of JPA entities and adapters, and MapStruct the request → command mapping, where both sides are plain records. The domain and the application layer use neither: `Order` is mapped by hand because it has behavior, not getters.
 - **Event ordering:** the message key is the `orderId`, so every event of an order goes to the same partition.
 - **Consumer errors:** 3 retries, then the message goes to a declared dead-letter topic and an error is logged.
 - **The backend identifies errors, the interface translates them:** every error response carries a stable `code` (plus `params` when the message has data), and the reason an order is rejected is a code too. The interface turns them into text in English or Spanish, and falls back to the English `detail` for a code it does not know. The domain never holds user-facing texts ([spec 007](specs/007-internationalization.md)).
@@ -174,7 +176,7 @@ TOKEN=$(curl -s -X POST localhost:8081/api/auth/token \
 curl -s -X POST localhost:8081/api/orders -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' -d '{"lines":[{"sku":"KB-01","quantity":1}]}'
 
-curl -s localhost:8081/api/orders -H "Authorization: Bearer $TOKEN"
+curl -s "localhost:8081/api/orders?page=0&size=10" -H "Authorization: Bearer $TOKEN"
 ```
 
 ## Tests
@@ -187,9 +189,10 @@ cd frontend && npm test    # Vitest
 
 - **Domain:** aggregate rules and state transitions.
 - **Application:** use cases with Mockito (catalog prices, order ownership, idempotency, compensation).
-- **Web:** `@WebMvcTest` with the real security configuration: valid tokens, expired tokens and tokens signed with another key; validation, 401, 404, 409 and 503.
-- **Architecture:** ArchUnit checks that the domain does not depend on frameworks or on other layers.
-- **Integration:** `@SpringBootTest` with a real PostgreSQL and Kafka in Testcontainers. They test the outbox end to end, idempotency against duplicates, stock release (including a cancellation that arrives before its order) and that concurrent reservations do not oversell.
+- **Web:** `@WebMvcTest` with the real security configuration: valid tokens, expired tokens and tokens signed with another key; validation of the body and of the page parameters, 401, 404, 409 and 503.
+- **HTTP client:** the adapter that calls inventory-service against a fake server (`MockRestServiceServer`), and its retries and circuit breaker in a minimal Spring context: how many times a `5xx`, a `4xx` and a dropped connection are attempted, and that an open circuit stops the calls.
+- **Architecture:** ArchUnit checks that the domain does not depend on frameworks or on other layers, and that the application layer does not use Spring Data.
+- **Integration:** `@SpringBootTest` with a real PostgreSQL and Kafka in Testcontainers. They test the outbox end to end, idempotency against duplicates, stock release (including a cancellation that arrives before its order) that concurrent reservations do not oversell, and that a page of orders costs two SQL queries (a guard against N+1).
 - **Frontend:** stores, HTTP client, router guard, polling with fake timers, components, and the translation of errors and texts in both languages.
 
 The GitHub Actions CI runs everything on every push and builds the Docker images.
@@ -215,9 +218,9 @@ code are mine.
 - [ ] Observability: distributed tracing across Kafka (one order followed end to end), Micrometer + Prometheus + Grafana.
 - [ ] Harden the outbox relay: bound the producer's wait when Kafka does not respond (`max.block.ms`) and purge rows that are already published.
 - [ ] End-to-end test with Playwright in CI, on top of `docker compose up`.
-- [ ] Pagination in the order list.
+- [ ] Keyset pagination in the order list: with `OFFSET`, far pages get slower as the table grows.
 - [ ] Keycloak as a real Identity Provider (RS256, `issuer-uri`).
-- [ ] Circuit breaker on the price lookup, or a local copy of prices fed by events.
+- [ ] A local copy of prices fed by events, so that placing an order does not depend on inventory-service being up.
 - [ ] Event contracts with Schema Registry (Avro or Protobuf).
 - [ ] A tool to reprocess the dead-letter topic.
 - [ ] Static analysis with SonarCloud in CI.

@@ -12,14 +12,24 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import org.hibernate.annotations.BatchSize;
 
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Lombok writes the getters and the empty constructor that JPA requires. No @Data and no @Setter:
+ * the state only changes through {@link #addLine} and {@link #updateState}.
+ */
 @Entity
 @Table(name = "orders")
+@Getter(AccessLevel.PACKAGE)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 class OrderJpaEntity {
 
     @Id
@@ -41,12 +51,11 @@ class OrderJpaEntity {
     @Version
     private Long version;
 
+    /** With @BatchSize the lines of all the orders of a page come in one query, not one per order. */
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @OrderBy("id ASC")
+    @BatchSize(size = 50)
     private List<OrderLineJpaEntity> lines = new ArrayList<>();
-
-    protected OrderJpaEntity() {
-    }
 
     OrderJpaEntity(UUID id, String customerId, OrderStatus status, String rejectionReason, Instant createdAt) {
         this.id = id;
@@ -65,11 +74,4 @@ class OrderJpaEntity {
         this.status = status;
         this.rejectionReason = rejectionReason;
     }
-
-    UUID getId() { return id; }
-    String getCustomerId() { return customerId; }
-    OrderStatus getStatus() { return status; }
-    String getRejectionReason() { return rejectionReason; }
-    Instant getCreatedAt() { return createdAt; }
-    List<OrderLineJpaEntity> getLines() { return lines; }
 }

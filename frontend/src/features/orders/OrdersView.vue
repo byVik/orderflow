@@ -20,6 +20,7 @@ const units = (order: Order) => order.lines.reduce((sum, line) => sum + line.qua
       <h1 class="text-[32px] font-bold tracking-tight">{{ t('orders.title') }}</h1>
       <p class="text-[15px] text-muted">{{ t('orders.autoRefresh') }}</p>
     </div>
+    <!-- The error does not hide the list: if "load more" fails, the orders already loaded stay. -->
     <p v-if="store.error" class="alert mt-7" role="alert">{{ errorMessage(store.error) }}</p>
     <div
       v-else-if="!store.loading && store.orders.length === 0"
@@ -28,7 +29,7 @@ const units = (order: Order) => order.lines.reduce((sum, line) => sum + line.qua
       {{ t('orders.empty') }}
       <RouterLink to="/catalog" class="font-semibold text-brand-700 underline">{{ t('common.browseCatalog') }}</RouterLink>
     </div>
-    <ul v-else class="mt-7 flex flex-col gap-3">
+    <ul v-if="store.orders.length > 0" class="mt-7 flex flex-col gap-3">
       <li v-for="order in store.orders" :key="order.id">
         <RouterLink
           :to="{ name: 'order', params: { id: order.id } }"
@@ -44,5 +45,10 @@ const units = (order: Order) => order.lines.reduce((sum, line) => sum + line.qua
         </RouterLink>
       </li>
     </ul>
+    <div v-if="store.hasNext" class="mt-6 flex justify-center">
+      <button type="button" class="btn btn-outline" :disabled="store.loadingMore" @click="store.loadMore">
+        {{ store.loadingMore ? t('orders.loadingMore') : t('orders.loadMore') }}
+      </button>
+    </div>
   </main>
 </template>

@@ -1,5 +1,6 @@
 package dev.viktorstrohush.orderflow.inventory.infrastructure.adapter.out.messaging;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,7 @@ import java.util.concurrent.TimeoutException;
  * next pass. The guarantee is at-least-once: consumers must be idempotent.
  */
 @Component
+@RequiredArgsConstructor
 class OutboxRelay {
 
     private static final int BATCH_SIZE = 50;
@@ -23,11 +25,6 @@ class OutboxRelay {
 
     private final SpringDataOutboxRepository outbox;
     private final KafkaTemplate<String, Object> kafka;
-
-    OutboxRelay(SpringDataOutboxRepository outbox, KafkaTemplate<String, Object> kafka) {
-        this.outbox = outbox;
-        this.kafka = kafka;
-    }
 
     @Scheduled(fixedDelayString = "${orderflow.outbox.poll-interval-ms}")
     @Transactional

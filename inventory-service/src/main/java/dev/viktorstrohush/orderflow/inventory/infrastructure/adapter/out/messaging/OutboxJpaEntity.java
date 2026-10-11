@@ -6,12 +6,17 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 
 /** An event waiting to be published. It is inserted in the same transaction as the business change. */
 @Entity
 @Table(name = "outbox")
+@Getter(AccessLevel.PACKAGE)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 class OutboxJpaEntity {
 
     @Id
@@ -33,9 +38,6 @@ class OutboxJpaEntity {
     @Column(name = "published_at")
     private Instant publishedAt;
 
-    protected OutboxJpaEntity() {
-    }
-
     OutboxJpaEntity(String topic, String messageKey, String payload, Instant createdAt) {
         this.topic = topic;
         this.messageKey = messageKey;
@@ -46,9 +48,4 @@ class OutboxJpaEntity {
     void markPublished(Instant when) {
         this.publishedAt = when;
     }
-
-    Long getId() { return id; }
-    String getTopic() { return topic; }
-    String getMessageKey() { return messageKey; }
-    String getPayload() { return payload; }
 }

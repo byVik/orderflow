@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.JwsHeader;
@@ -27,15 +28,12 @@ import java.time.Instant;
 @RequestMapping("/api/auth")
 @Tag(name = "Auth (demo)")
 @ConditionalOnProperty(name = "orderflow.auth.demo-login-enabled", havingValue = "true")
+@RequiredArgsConstructor
 class AuthController {
 
     private static final Duration TTL = Duration.ofHours(8);
 
     private final JwtEncoder encoder;
-
-    AuthController(JwtEncoder encoder) {
-        this.encoder = encoder;
-    }
 
     @PostMapping("/token")
     @Operation(summary = "Returns a demo JWT for the given user")

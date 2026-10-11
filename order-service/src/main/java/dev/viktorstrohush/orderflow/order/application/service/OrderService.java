@@ -1,5 +1,7 @@
 package dev.viktorstrohush.orderflow.order.application.service;
 
+import dev.viktorstrohush.orderflow.order.application.port.PageQuery;
+import dev.viktorstrohush.orderflow.order.application.port.PageResult;
 import dev.viktorstrohush.orderflow.order.application.port.in.ApplyStockResultUseCase;
 import dev.viktorstrohush.orderflow.order.application.port.in.CancelOrderUseCase;
 import dev.viktorstrohush.orderflow.order.application.port.in.GetOrdersQuery;
@@ -88,8 +90,8 @@ public class OrderService implements PlaceOrderUseCase, GetOrdersQuery, CancelOr
 
     @Override
     @Transactional(readOnly = true)
-    public List<Order> listByCustomer(String customerId) {
-        return orders.findByCustomerId(customerId);
+    public PageResult<Order> listByCustomer(String customerId, PageQuery page) {
+        return orders.findByCustomerId(customerId, page);
     }
 
     @Override

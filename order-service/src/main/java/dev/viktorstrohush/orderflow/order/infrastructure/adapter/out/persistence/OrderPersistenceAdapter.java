@@ -1,9 +1,15 @@
 package dev.viktorstrohush.orderflow.order.infrastructure.adapter.out.persistence;
 
+import dev.viktorstrohush.orderflow.order.application.port.PageQuery;
+import dev.viktorstrohush.orderflow.order.application.port.PageResult;
 import dev.viktorstrohush.orderflow.order.application.port.out.OrderRepository;
 import dev.viktorstrohush.orderflow.order.domain.model.Order;
 import dev.viktorstrohush.orderflow.order.domain.model.OrderId;
 import dev.viktorstrohush.orderflow.order.domain.model.OrderLine;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -11,13 +17,13 @@ import java.util.Optional;
 
 /** Outbound adapter: translates between the domain aggregate and the JPA entities. */
 @Component
+@RequiredArgsConstructor
 class OrderPersistenceAdapter implements OrderRepository {
 
-    private final SpringDataOrderRepository jpa;
+    /** The id breaks the ties, so two orders created at the same instant keep their place between requests. */
+    private static final Sort NEWEST_FIRST = Sort.by(Sort.Order.desc("createdAt"), Sort.Order.desc("id"));
 
-    OrderPersistenceAdapter(SpringDataOrderRepository jpa) {
-        this.jpa = jpa;
-    }
+    private final SpringDataOrderRepository jpa;
 
     @Override
     public Order save(Order order) {
@@ -35,11 +41,13 @@ class OrderPersistenceAdapter implements OrderRepository {
         return jpa.findById(id.value()).map(OrderPersistenceAdapter::toDomain);
     }
 
+    /** Here the application's PageQuery becomes Spring Data's PageRequest, and the Slice a PageResult. */
     @Override
-    public List<Order> findByCustomerId(String customerId) {
-        return jpa.findByCustomerIdOrderByCreatedAtDesc(customerId).stream()
-                .map(OrderPersistenceAdapter::toDomain)
-                .toList();
+    public PageResult<Order> findByCustomerId(String customerId, PageQuery page) {
+        Slice<OrderJpaEntity> slice =
+                jpa.findByCustomerId(customerId, PageRequest.of(page.page(), page.size(), NEWEST_FIRST));
+        List<Order> orders = slice.getContent().stream().map(OrderPersistenceAdapter::toDomain).toList();
+        return new PageResult<>(orders, page.page(), page.size(), slice.hasNext());
     }
 
     private static OrderJpaEntity toNewEntity(Order order) {

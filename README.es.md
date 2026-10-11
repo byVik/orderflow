@@ -111,7 +111,7 @@ Dentro de un dominio los imports son relativos; entre dominios y hacia `shared/`
 
 | Capa | Tecnologías |
 |------|-------------|
-| Backend | Java 21, Spring Boot 3.5, Spring Web, Spring Data JPA / Hibernate, Bean Validation |
+| Backend | Java 21, Spring Boot 3.5, Spring Web, Spring Data JPA / Hibernate, Bean Validation, Resilience4j (reintentos + *circuit breaker*), MapStruct, Lombok |
 | Mensajería | Apache Kafka (KRaft), Spring Kafka, outbox transaccional, reintentos + dead-letter topic |
 | Persistencia | PostgreSQL 16, Flyway, base de datos por servicio |
 | Seguridad | Spring Security, OAuth2 Resource Server, JWT |
@@ -123,12 +123,14 @@ Dentro de un dominio los imports son relativos; entre dominios y hacia `shared/`
 ## Decisiones técnicas
 
 - **Hexagonal + DDD:** el agregado `Order` protege sus invariantes (sin líneas vacías, sin SKUs duplicados, entre 1 y 100 unidades por línea, transiciones de estado válidas). Los casos de uso son interfaces (puertos de entrada) y la infraestructura se enchufa por puertos de salida.
-- **El precio lo decide el backend:** el cliente solo envía `sku` y `quantity`. order-service consulta el catálogo, con *timeouts* y **fuera de la transacción** para no retener una conexión a la base de datos durante una llamada HTTP. Si el catálogo no responde: `503`.
+- **El precio lo decide el backend:** el cliente solo envía `sku` y `quantity`. order-service consulta el catálogo, con *timeouts* y **fuera de la transacción** para no retener una conexión a la base de datos durante una llamada HTTP. Una llamada fallida se reintenta cuando otro intento puede servir (sin respuesta o un `5xx`), y un ***circuit breaker*** deja de llamar a un catálogo que falla una y otra vez, para que las peticiones de pedido fallen rápido en vez de acumularse esperando su *timeout* (Resilience4j, [spec 009](specs/009-resilient-catalog-client.md)). Si el catálogo no responde: `503`.
 - **Outbox transaccional:** guardar en la base de datos y publicar en Kafka son dos escrituras sin transacción común. El evento se inserta en una tabla `outbox` en la misma transacción que el pedido y un *relay* lo publica después (`FOR UPDATE SKIP LOCKED`, espera la confirmación del broker). Ni eventos fantasma ni eventos perdidos. Los puertos no cambiaron: fue un cambio de adaptador.
 - **Compensación de la saga:** cancelar publica `OrderCancelled` e inventory devuelve el stock. Como entre topics distintos no hay orden garantizado, si la cancelación llega antes que el pedido queda registrada y ese pedido ya no reserva nada.
 - **Idempotencia:** inventory-service guarda cada reserva por `orderId` y lo comprueba después de tomar los bloqueos; la clave primaria es la red de seguridad. order-service ignora resultados para pedidos que ya no están `PENDING`.
 - **Sin sobreventa:** la reserva bloquea las filas de producto (`PESSIMISTIC_WRITE`) en orden de SKU para evitar interbloqueos. Es todo o nada, y hay un test con compradores simultáneos.
 - **Concurrencia en pedidos:** bloqueo optimista (`@Version`). Si cancelar y confirmar coinciden, gana el primero y el otro recibe un `409`.
+- **Listado de pedidos paginado:** `GET /api/orders?page=0&size=10` devuelve una página y `hasNext`, sin total, así no hay un `count` en cada petición. Una página cuesta dos consultas sea cual sea su tamaño (los pedidos con `LIMIT` y después las líneas de todos en un lote), y un test de integración las cuenta. Los puertos usan sus propios `PageQuery` / `PageResult`: el `Pageable` de Spring Data se queda en el adaptador de persistencia ([spec 008](specs/008-order-list-pagination.md)).
+- **Código generado solo en los bordes:** Lombok escribe los getters y constructores de las entidades JPA y de los adaptadores, y MapStruct el mapeo petición → comando, donde los dos lados son records sin lógica. El dominio y la capa de aplicación no usan ninguno: `Order` se mapea a mano porque tiene comportamiento, no getters.
 - **Orden de eventos:** la clave del mensaje es el `orderId`, así todos los eventos de un pedido van a la misma partición.
 - **Errores en consumidores:** 3 reintentos y después el mensaje va a un *dead-letter topic* declarado, dejando un log de error.
 - **El backend identifica los errores y la interfaz los traduce:** cada respuesta de error lleva un `code` estable (y `params` cuando el mensaje tiene datos), y el motivo de rechazo de un pedido también es un código. La interfaz los convierte en texto en inglés o en español, y recurre al `detail` en inglés si no conoce el código. El dominio no guarda textos para el usuario ([spec 007](specs/007-internationalization.md)).
@@ -174,7 +176,7 @@ TOKEN=$(curl -s -X POST localhost:8081/api/auth/token \
 curl -s -X POST localhost:8081/api/orders -H "Authorization: Bearer $TOKEN" \
   -H 'Content-Type: application/json' -d '{"lines":[{"sku":"KB-01","quantity":1}]}'
 
-curl -s localhost:8081/api/orders -H "Authorization: Bearer $TOKEN"
+curl -s "localhost:8081/api/orders?page=0&size=10" -H "Authorization: Bearer $TOKEN"
 ```
 
 ## Tests
@@ -187,9 +189,10 @@ cd frontend && npm test    # Vitest
 
 - **Dominio:** reglas de los agregados y transiciones de estado.
 - **Aplicación:** casos de uso con Mockito (precios del catálogo, propiedad del pedido, idempotencia, compensación).
-- **Web:** `@WebMvcTest` con la configuración de seguridad real: tokens válidos, caducados y firmados con otra clave; validación, 401, 404, 409 y 503.
-- **Arquitectura:** ArchUnit comprueba que el dominio no depende de frameworks ni de otras capas.
-- **Integración:** `@SpringBootTest` con PostgreSQL y Kafka reales en Testcontainers. Prueban el outbox de extremo a extremo, la idempotencia ante duplicados, la liberación de stock (incluida la cancelación que llega antes que el pedido) y que varias reservas simultáneas no venden de más.
+- **Web:** `@WebMvcTest` con la configuración de seguridad real: tokens válidos, caducados y firmados con otra clave; validación del cuerpo y de los parámetros de página, 401, 404, 409 y 503.
+- **Cliente HTTP:** el adaptador que llama a inventory-service contra un servidor simulado (`MockRestServiceServer`), y sus reintentos y su *circuit breaker* en un contexto de Spring mínimo: cuántas veces se intenta un `5xx`, un `4xx` y una conexión caída, y que un circuito abierto corta las llamadas.
+- **Arquitectura:** ArchUnit comprueba que el dominio no depende de frameworks ni de otras capas, y que la capa de aplicación no usa Spring Data.
+- **Integración:** `@SpringBootTest` con PostgreSQL y Kafka reales en Testcontainers. Prueban el outbox de extremo a extremo, la idempotencia ante duplicados, la liberación de stock (incluida la cancelación que llega antes que el pedido) que varias reservas simultáneas no venden de más, y que una página de pedidos cuesta dos consultas SQL (la guarda contra el N+1).
 - **Frontend:** stores, cliente HTTP, guard del router, sondeo con temporizadores simulados, componentes, y la traducción de errores y textos en los dos idiomas.
 
 La CI de GitHub Actions ejecuta todo en cada push y construye las imágenes Docker.
@@ -215,9 +218,9 @@ código son mías.
 - [ ] Observabilidad: trazas distribuidas a través de Kafka (un pedido seguido de extremo a extremo), Micrometer + Prometheus + Grafana.
 - [ ] Endurecer el relay del outbox: acotar la espera del productor cuando Kafka no responde (`max.block.ms`) y purgar las filas ya publicadas.
 - [ ] Test de extremo a extremo con Playwright en la CI, sobre `docker compose up`.
-- [ ] Paginación en el listado de pedidos.
+- [ ] Paginación por clave en el listado de pedidos: con `OFFSET`, las páginas lejanas son más lentas cuanto más crece la tabla.
 - [ ] Keycloak como Identity Provider real (RS256, `issuer-uri`).
-- [ ] *Circuit breaker* en la consulta de precios, o una copia local de precios alimentada por eventos.
+- [ ] Una copia local de precios alimentada por eventos, para que crear un pedido no dependa de que inventory-service esté en pie.
 - [ ] Contratos de eventos con Schema Registry (Avro o Protobuf).
 - [ ] Herramienta para reprocesar el dead-letter topic.
 - [ ] Análisis estático con SonarCloud en la CI.

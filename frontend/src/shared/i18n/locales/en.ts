@@ -61,6 +61,8 @@ const en = {
     autoRefresh: 'Refreshes automatically while there are pending orders',
     empty: "You haven't placed any orders yet.",
     units: '{count} item | {count} items',
+    loadMore: 'Load more',
+    loadingMore: 'Loading…',
   },
   order: {
     stalled: 'This is taking longer than usual. Reload the page to check the status again.',

@@ -7,6 +7,7 @@ import dev.viktorstrohush.orderflow.events.OrderPlacedEvent;
 import dev.viktorstrohush.orderflow.events.Topics;
 import dev.viktorstrohush.orderflow.order.application.port.out.OrderEventPublisher;
 import dev.viktorstrohush.orderflow.order.domain.model.Order;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,15 +21,11 @@ import java.util.UUID;
  * neither commits. {@link OutboxRelay} does the actual send.
  */
 @Component
+@RequiredArgsConstructor
 class OutboxOrderEventPublisher implements OrderEventPublisher {
 
     private final SpringDataOutboxRepository outbox;
     private final ObjectMapper json;
-
-    OutboxOrderEventPublisher(SpringDataOutboxRepository outbox, ObjectMapper json) {
-        this.outbox = outbox;
-        this.json = json;
-    }
 
     /** MANDATORY: publishing outside a transaction is a programming error and must fail. */
     @Override

@@ -6,6 +6,7 @@ import dev.viktorstrohush.orderflow.events.StockResultEvent;
 import dev.viktorstrohush.orderflow.events.Topics;
 import dev.viktorstrohush.orderflow.inventory.application.port.out.StockEventPublisher;
 import dev.viktorstrohush.orderflow.inventory.domain.model.ReservationResult;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,15 +18,11 @@ import java.time.Instant;
  * within the same transaction that deducts the stock. {@link OutboxRelay} does the send to Kafka.
  */
 @Component
+@RequiredArgsConstructor
 class OutboxStockEventPublisher implements StockEventPublisher {
 
     private final SpringDataOutboxRepository outbox;
     private final ObjectMapper json;
-
-    OutboxStockEventPublisher(SpringDataOutboxRepository outbox, ObjectMapper json) {
-        this.outbox = outbox;
-        this.json = json;
-    }
 
     /** MANDATORY: publishing outside a transaction is a programming error and must fail. */
     @Override

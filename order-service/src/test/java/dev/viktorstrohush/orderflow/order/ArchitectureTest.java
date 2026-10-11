@@ -24,7 +24,7 @@ class ArchitectureTest {
             .should().dependOnClassesThat().resideInAnyPackage(
                     "..infrastructure..", "jakarta.persistence..", "org.apache.kafka..",
                     "org.springframework.kafka..", "org.springframework.web..", "org.springframework.http..",
-                    "dev.viktorstrohush.orderflow.events..");
+                    "org.springframework.data..", "dev.viktorstrohush.orderflow.events..");
 
     @ArchTest
     static final ArchRule theInboundAdaptersDoNotUseTheOutboundOnes = noClasses()

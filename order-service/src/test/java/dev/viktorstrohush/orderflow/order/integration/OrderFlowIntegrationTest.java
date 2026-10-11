@@ -2,6 +2,8 @@ package dev.viktorstrohush.orderflow.order.integration;
 
 import dev.viktorstrohush.orderflow.events.StockResultEvent;
 import dev.viktorstrohush.orderflow.events.Topics;
+import dev.viktorstrohush.orderflow.order.application.port.PageQuery;
+import dev.viktorstrohush.orderflow.order.application.port.PageResult;
 import dev.viktorstrohush.orderflow.order.application.port.in.CancelOrderUseCase;
 import dev.viktorstrohush.orderflow.order.application.port.in.GetOrdersQuery;
 import dev.viktorstrohush.orderflow.order.application.port.in.PlaceOrderUseCase;
@@ -28,10 +30,12 @@ import org.testcontainers.kafka.KafkaContainer;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -44,7 +48,10 @@ import static org.mockito.Mockito.when;
  * that its events go out through the outbox and that it moves to CONFIRMED / REJECTED on
  * receiving the result from inventory-service.
  */
-@SpringBootTest(properties = "orderflow.auth.jwt-secret=integration-test-secret-0123456789abcdef")
+@SpringBootTest(properties = {
+        "orderflow.auth.jwt-secret=integration-test-secret-0123456789abcdef",
+        "spring.jpa.properties.hibernate.session_factory.statement_inspector="
+                + "dev.viktorstrohush.orderflow.order.integration.SqlRecorder"})
 @Import(ContainersConfig.class)
 class OrderFlowIntegrationTest {
 
@@ -137,9 +144,60 @@ class OrderFlowIntegrationTest {
                 .isInstanceOf(IllegalTransactionStateException.class);
     }
 
+    /** Spec 008: twelve orders, pages of five. */
+    @Test
+    void theOrdersAreListedInPagesNewestFirstAndOnlyThoseOfTheCustomer() {
+        String customer = "pages-" + UUID.randomUUID();
+        for (int i = 0; i < 12; i++) {
+            placeSampleOrder(customer);
+        }
+        placeSampleOrder("someone-else");
+
+        PageResult<Order> first = getOrders.listByCustomer(customer, new PageQuery(0, 5));
+        PageResult<Order> second = getOrders.listByCustomer(customer, new PageQuery(1, 5));
+        PageResult<Order> last = getOrders.listByCustomer(customer, new PageQuery(2, 5));
+
+        assertThat(first.content()).hasSize(5);
+        assertThat(first.hasNext()).isTrue();
+        assertThat(second.content()).hasSize(5);
+        assertThat(second.hasNext()).isTrue();
+        assertThat(last.content()).hasSize(2);
+        assertThat(last.hasNext()).isFalse();
+
+        List<Order> all = Stream.of(first, second, last).flatMap(page -> page.content().stream()).toList();
+        assertThat(all).extracting(Order::id).doesNotHaveDuplicates();
+        assertThat(all).extracting(Order::customerId).containsOnly(customer);
+        assertThat(all).extracting(Order::createdAt).isSortedAccordingTo(Comparator.reverseOrder());
+    }
+
+    /**
+     * The guard against N+1: one query for the orders and one for the lines of all of them. If the
+     * lines were loaded order by order, a page of ten would cost eleven queries.
+     */
+    @Test
+    void aPageCostsTwoQueriesWhateverItsSize() {
+        String customer = "queries-" + UUID.randomUUID();
+        for (int i = 0; i < 10; i++) {
+            placeSampleOrder(customer);
+        }
+
+        List<String> sql = SqlRecorder.record(() ->
+                assertThat(getOrders.listByCustomer(customer, new PageQuery(0, 10)).content())
+                        .hasSize(10)
+                        .allSatisfy(order -> assertThat(order.lines()).hasSize(1)));
+
+        assertThat(sql).hasSize(2);
+        assertThat(sql.get(0)).contains("from orders");
+        assertThat(sql.get(1)).contains("from order_lines");
+    }
+
     private Order placeSampleOrder() {
+        return placeSampleOrder("viktor");
+    }
+
+    private Order placeSampleOrder(String customerId) {
         when(catalog.pricesFor(anySet())).thenReturn(Map.of("KB-01", new BigDecimal("49.90")));
-        return placeOrder.place(new PlaceOrderCommand("viktor", List.of(new PlaceOrderCommand.Line("KB-01", 1))));
+        return placeOrder.place(new PlaceOrderCommand(customerId, List.of(new PlaceOrderCommand.Line("KB-01", 1))));
     }
 
     private Integer pendingOutboxRows(Order order) {

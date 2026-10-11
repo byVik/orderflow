@@ -62,6 +62,8 @@ const es: Messages = {
     autoRefresh: 'Se actualiza solo mientras haya pedidos pendientes',
     empty: 'Todavía no has hecho ningún pedido.',
     units: '{count} artículo | {count} artículos',
+    loadMore: 'Cargar más',
+    loadingMore: 'Cargando…',
   },
   order: {
     stalled: 'Está tardando más de lo normal. Recarga la página para volver a comprobar el estado.',

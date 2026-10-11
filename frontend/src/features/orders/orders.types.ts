@@ -17,6 +17,14 @@ export interface Order {
   lines: OrderLine[]
 }
 
+/** One page of a list. There is no total: `hasNext` says whether to offer "load more". */
+export interface Page<T> {
+  content: T[]
+  page: number
+  size: number
+  hasNext: boolean
+}
+
 export interface PlaceOrderRequest {
   lines: { sku: string; quantity: number }[]
 }

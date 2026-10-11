@@ -15,6 +15,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.util.Map;
@@ -70,6 +71,24 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
                 .collect(Collectors.joining("; "));
         ProblemDetail problem = ex.getBody();
         problem.setDetail("Invalid request. " + fields);
+        problem.setProperty(CODE, "VALIDATION_FAILED");
+        return handleExceptionInternal(ex, problem, headers, status, request);
+    }
+
+    /**
+     * The same for constraints on the method parameters themselves ({@code @Min} on a
+     * {@code @RequestParam}): Spring reports those with a different exception than a {@code @Valid} body.
+     */
+    @Override
+    protected ResponseEntity<Object> handleHandlerMethodValidationException(HandlerMethodValidationException ex,
+                                                                            HttpHeaders headers, HttpStatusCode status,
+                                                                            WebRequest request) {
+        String parameters = ex.getParameterValidationResults().stream()
+                .flatMap(result -> result.getResolvableErrors().stream()
+                        .map(error -> result.getMethodParameter().getParameterName() + ": " + error.getDefaultMessage()))
+                .collect(Collectors.joining("; "));
+        ProblemDetail problem = ex.getBody();
+        problem.setDetail("Invalid request. " + parameters);
         problem.setProperty(CODE, "VALIDATION_FAILED");
         return handleExceptionInternal(ex, problem, headers, status, request);
     }

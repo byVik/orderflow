@@ -2,6 +2,7 @@ package dev.viktorstrohush.orderflow.inventory.infrastructure.adapter.out.persis
 
 import dev.viktorstrohush.orderflow.inventory.application.port.out.ProductRepository;
 import dev.viktorstrohush.orderflow.inventory.domain.model.Product;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
@@ -11,13 +12,10 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component
+@RequiredArgsConstructor
 class ProductPersistenceAdapter implements ProductRepository {
 
     private final SpringDataProductRepository jpa;
-
-    ProductPersistenceAdapter(SpringDataProductRepository jpa) {
-        this.jpa = jpa;
-    }
 
     @Override
     public List<Product> findAll() {

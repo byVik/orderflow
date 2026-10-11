@@ -46,6 +46,31 @@ orderflow:
     demo-login-enabled: ${DEMO_LOGIN_ENABLED:false}
     jwt-secret: ${JWT_SECRET}
 
+# Protection of the call to inventory-service (InventoryCatalogClient). Spec 009.
+resilience4j:
+  retry:
+    instances:
+      inventory:
+        max-attempts: 3
+        wait-duration: 200ms
+        # Only what a new attempt can fix: no response, or a 5xx. A 4xx would fail again.
+        retry-exceptions:
+          - org.springframework.web.client.ResourceAccessException
+          - org.springframework.web.client.HttpServerErrorException
+  circuitbreaker:
+    instances:
+      inventory:
+        # Looks at the last 10 calls, once there are at least 5. If half of them failed, it opens.
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        # Open: for 10 s the calls fail at once. Then 2 trial calls decide whether it closes again.
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 2
+        # A 4xx is our mistake, not a sign that inventory-service is down.
+        ignore-exceptions:
+          - org.springframework.web.client.HttpClientErrorException
+
 management:
   endpoints:
     web:

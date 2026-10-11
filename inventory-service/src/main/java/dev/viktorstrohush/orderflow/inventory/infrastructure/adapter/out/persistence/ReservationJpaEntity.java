@@ -12,6 +12,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -20,6 +23,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "stock_reservations")
+@Getter(AccessLevel.PACKAGE)
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 class ReservationJpaEntity {
 
     @Id
@@ -47,9 +52,6 @@ class ReservationJpaEntity {
     @CollectionTable(name = "stock_reservation_items", joinColumns = @JoinColumn(name = "order_id"))
     private List<ReservationItemEmbeddable> items = new ArrayList<>();
 
-    protected ReservationJpaEntity() {
-    }
-
     ReservationJpaEntity(UUID orderId, Reservation.Status status, String reason, Instant processedAt,
                          List<ReservationItemEmbeddable> items) {
         this.orderId = orderId;
@@ -63,9 +65,4 @@ class ReservationJpaEntity {
         this.status = status;
         this.reason = reason;
     }
-
-    UUID getOrderId() { return orderId; }
-    Reservation.Status getStatus() { return status; }
-    String getReason() { return reason; }
-    List<ReservationItemEmbeddable> getItems() { return items; }
 }

@@ -13,6 +13,8 @@ and the context given to the AI agents (Claude Code) to implement it.
 | [005 · Transactional outbox](005-transactional-outbox.md) | ✅ Implemented |
 | [006 · Interface redesign](006-interface-redesign.md) | ✅ Implemented |
 | [007 · Internationalization and error codes](007-internationalization.md) | ✅ Implemented |
+| [008 · Order list pagination](008-order-list-pagination.md) | ✅ Implemented |
+| [009 · Resilient catalog client](009-resilient-catalog-client.md) | ✅ Implemented |
 
 Workflow:
 

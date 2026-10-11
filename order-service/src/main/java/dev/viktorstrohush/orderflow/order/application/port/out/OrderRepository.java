@@ -1,9 +1,10 @@
 package dev.viktorstrohush.orderflow.order.application.port.out;
 
+import dev.viktorstrohush.orderflow.order.application.port.PageQuery;
+import dev.viktorstrohush.orderflow.order.application.port.PageResult;
 import dev.viktorstrohush.orderflow.order.domain.model.Order;
 import dev.viktorstrohush.orderflow.order.domain.model.OrderId;
 
-import java.util.List;
 import java.util.Optional;
 
 public interface OrderRepository {
@@ -12,5 +13,6 @@ public interface OrderRepository {
 
     Optional<Order> findById(OrderId id);
 
-    List<Order> findByCustomerId(String customerId);
+    /** One page of the customer's orders, newest first. */
+    PageResult<Order> findByCustomerId(String customerId, PageQuery page);
 }
