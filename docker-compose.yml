@@ -2,14 +2,16 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: orderflow
-      POSTGRES_PASSWORD: orderflow
+      # Values come from .env (see .env.example); the defaults keep `docker compose up` zero-config.
+      POSTGRES_USER: ${POSTGRES_USER:-orderflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-orderflow}
     ports: ["5432:5432"]
     volumes:
       - ./infra/init-databases.sql:/docker-entrypoint-initdb.d/init.sql:ro
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "psql -U orderflow -d inventory -c 'select 1' && psql -U orderflow -d orders -c 'select 1'"]
+      # $$ escapes Compose interpolation: the variable is resolved inside the container.
+      test: ["CMD-SHELL", "psql -U $$POSTGRES_USER -d inventory -c 'select 1' && psql -U $$POSTGRES_USER -d orders -c 'select 1'"]
       interval: 5s
       retries: 10
 
@@ -39,6 +41,8 @@ services:
       # Demo profile: enables the passwordless login and a known JWT secret (application-dev.yml).
       SPRING_PROFILES_ACTIVE: dev
       DB_URL: jdbc:postgresql://postgres:5432/orders
+      DB_USER: ${POSTGRES_USER:-orderflow}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-orderflow}
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       INVENTORY_BASE_URL: http://inventory-service:8082
     ports: ["8081:8081"]
@@ -51,6 +55,8 @@ services:
     build: { context: ., args: { SERVICE: inventory-service } }
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/inventory
+      DB_USER: ${POSTGRES_USER:-orderflow}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-orderflow}
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     ports: ["8082:8082"]
     restart: on-failure

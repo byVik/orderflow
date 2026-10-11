@@ -152,6 +152,9 @@ Entra con cualquier nombre de usuario, añade productos al carrito y haz un pedi
 rechazo, pide más unidades del micrófono (`MC-01`, solo hay 3). `docker compose down -v` borra
 los datos y deja el catálogo como al principio.
 
+Las credenciales de la base de datos son por defecto `orderflow` / `orderflow`. Para cambiarlas,
+copia [.env.example](.env.example) a `.env` (ignorado por git) antes del primer arranque.
+
 ### Modo desarrollo
 
 ```bash

@@ -152,6 +152,9 @@ Sign in with any username, add products to the cart and place an order. To see a
 more units of the microphone than there are (`MC-01`, only 3 in stock). `docker compose down -v`
 wipes the data and resets the catalog.
 
+The database credentials default to `orderflow` / `orderflow`. To change them, copy
+[.env.example](.env.example) to `.env` (git-ignored) before the first start.
+
 ### Development mode
 
 ```bash
