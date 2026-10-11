@@ -6,7 +6,7 @@ import dev.viktorstrohush.orderflow.inventory.application.port.in.ReleaseStockUs
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
-/** Adaptador de entrada: compensación de la saga. Devuelve el stock de un pedido cancelado. */
+/** Inbound adapter: saga compensation. Returns the stock of a cancelled order. */
 @Component
 class OrderCancelledListener {
 

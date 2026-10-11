@@ -16,9 +16,9 @@ jobs:
           distribution: temurin
           java-version: 21
           cache: maven
-      - name: Build y tests (unitarios + integración con Testcontainers)
+      - name: Build and tests (unit + integration with Testcontainers)
         run: mvn -B verify
-      - name: Informe de cobertura
+      - name: Coverage report
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -44,7 +44,7 @@ jobs:
       - run: npm run build
 
   docker:
-    name: Imágenes Docker
+    name: Docker images
     runs-on: ubuntu-latest
     needs: [backend, frontend]
     steps:

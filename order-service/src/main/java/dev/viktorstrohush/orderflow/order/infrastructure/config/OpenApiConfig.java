@@ -10,7 +10,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @OpenAPIDefinition(
         info = @Info(title = "OrderFlow · Order Service", version = "1.0",
-                description = "Gestión de pedidos. Obtén un token en POST /api/auth/token y pulsa Authorize."),
+                description = "Order management. Get a token at POST /api/auth/token and click Authorize."),
         security = @SecurityRequirement(name = "bearerAuth"))
 @SecurityScheme(name = "bearerAuth", type = SecuritySchemeType.HTTP, scheme = "bearer", bearerFormat = "JWT")
 class OpenApiConfig {

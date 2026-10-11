@@ -11,7 +11,7 @@ public interface ProductRepository {
 
     List<Product> findBySkus(Collection<String> skus);
 
-    /** Igual que findBySkus pero bloqueando las filas (SELECT ... FOR UPDATE). */
+    /** Same as findBySkus but locking the rows (SELECT ... FOR UPDATE). */
     List<Product> findBySkusForUpdate(Collection<String> skus);
 
     void saveAll(List<Product> products);

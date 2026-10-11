@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import AppHeader from '@/components/AppHeader.vue'
-import { useAuthStore } from '@/stores/auth'
+import { useAuthStore } from '@/features/auth/auth.store'
+import AppHeader from '@/shared/components/AppHeader.vue'
 
 const auth = useAuthStore()
 </script>

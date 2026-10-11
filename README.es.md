@@ -19,7 +19,7 @@ Es un proyecto personal para practicar **Spring Boot**, **arquitectura hexagonal
 
 | Catálogo | Seguimiento del pedido |
 |----------|------------------------|
-| ![Catálogo](docs/screenshots/02-catalogo.png) | ![Pedido pendiente](docs/screenshots/05-detalle-pendiente.png) |
+| ![Catálogo](docs/screenshots/02-catalog.png) | ![Pedido pendiente](docs/screenshots/05-order-pending.png) |
 
 Más capturas en [docs/screenshots](docs/screenshots/). La interfaz está disponible en inglés y en
 español, con un selector en la cabecera; las capturas muestran la versión en inglés.
@@ -92,6 +92,21 @@ order-service/src/main/java/.../order
 El dominio no conoce Spring: los adaptadores dependen del núcleo y nunca al revés. Un test de
 **ArchUnit** lo comprueba en cada build.
 
+### Frontend organizado por dominio
+
+```
+frontend/src
+├── features/                # Una carpeta por dominio: vistas, componentes, store, cliente de la API, tipos y tests
+│   ├── auth/                # Login y sesión
+│   ├── catalog/             # Catálogo y tarjeta de producto
+│   ├── cart/                # Carrito
+│   └── orders/              # Lista y detalle de pedidos, etiqueta de estado, línea de estado
+├── shared/                  # Lo que usan todos los dominios: cliente HTTP, i18n, cabecera, sondeo, formato
+└── router/                  # Rutas y guard de sesión
+```
+
+Dentro de un dominio los imports son relativos; entre dominios y hacia `shared/` van por el alias `@/`.
+
 ## Stack
 
 | Capa | Tecnologías |
@@ -116,7 +131,7 @@ El dominio no conoce Spring: los adaptadores dependen del núcleo y nunca al rev
 - **Concurrencia en pedidos:** bloqueo optimista (`@Version`). Si cancelar y confirmar coinciden, gana el primero y el otro recibe un `409`.
 - **Orden de eventos:** la clave del mensaje es el `orderId`, así todos los eventos de un pedido van a la misma partición.
 - **Errores en consumidores:** 3 reintentos y después el mensaje va a un *dead-letter topic* declarado, dejando un log de error.
-- **El backend identifica los errores y la interfaz los traduce:** cada respuesta de error lleva un `code` estable (y `params` cuando el mensaje tiene datos), y el motivo de rechazo de un pedido también es un código. La interfaz los convierte en texto en inglés o en español, y recurre al `detail` en inglés si no conoce el código. El dominio no guarda textos para el usuario ([spec 007](specs/es/007-internacionalizacion.md)).
+- **El backend identifica los errores y la interfaz los traduce:** cada respuesta de error lleva un `code` estable (y `params` cuando el mensaje tiene datos), y el motivo de rechazo de un pedido también es un código. La interfaz los convierte en texto en inglés o en español, y recurre al `detail` en inglés si no conoce el código. El dominio no guarda textos para el usuario ([spec 007](specs/007-internationalization.md)).
 - **Seguro por defecto:** el login de demo y su secreto JWT solo existen con el perfil `dev`. Sin perfil, order-service exige `JWT_SECRET` y no expone `/api/auth/token`. En producción los servicios serían resource servers de Keycloak/Auth0.
 
 ## Cómo ejecutarlo
@@ -180,14 +195,14 @@ La CI de GitHub Actions ejecuta todo en cada push y construye las imágenes Dock
 
 El proyecto se ha desarrollado con **Spec Driven Development** y **Claude Code** como asistente:
 
-1. Cada funcionalidad empieza como especificación en [`/specs`](specs/es/), con reglas y criterios de aceptación.
+1. Cada funcionalidad empieza como especificación en [`/specs`](specs/) (en inglés), con reglas y criterios de aceptación.
 2. Los criterios se convierten en tests.
 3. La implementación se hace con el agente, usando la spec como contexto, y **todo el código se revisa** antes de integrarlo.
 
 Dos ejemplos de cómo se usó el agente más allá de escribir código:
 
-- **Revisión del propio diseño.** Una auditoría con el agente encontró fallos que los tests no cubrían: una cancelación dejaba el stock descontado, y un evento podía perderse si el servicio caía justo tras el commit. La fuga de stock se reprodujo primero contra el sistema en marcha, y los dos se resolvieron con su spec ([004](specs/es/004-cancelacion-y-liberacion-de-stock.md), [005](specs/es/005-outbox-transaccional.md)) y sus tests.
-- **Diseño de la interfaz.** Las pantallas se prototiparon en **Claude Design** (un lienzo con las cinco vistas, generado desde Claude Code) y después se implementaron en Vue 3 + Tailwind ([spec 006](specs/es/006-rediseno-interfaz.md)). El resultado se comprobó con capturas automáticas en escritorio y móvil, que son las de este README.
+- **Revisión del propio diseño.** Una auditoría con el agente encontró fallos que los tests no cubrían: una cancelación dejaba el stock descontado, y un evento podía perderse si el servicio caía justo tras el commit. La fuga de stock se reprodujo primero contra el sistema en marcha, y los dos se resolvieron con su spec ([004](specs/004-cancellation-and-stock-release.md), [005](specs/005-transactional-outbox.md)) y sus tests.
+- **Diseño de la interfaz.** Las pantallas se prototiparon en **Claude Design** (un lienzo con las cinco vistas, generado desde Claude Code) y después se implementaron en Vue 3 + Tailwind ([spec 006](specs/006-interface-redesign.md)). El resultado se comprobó con capturas automáticas en escritorio y móvil, que son las de este README.
 
 La IA acelera la implementación. Las decisiones de diseño, la revisión y la responsabilidad del
 código son mías.

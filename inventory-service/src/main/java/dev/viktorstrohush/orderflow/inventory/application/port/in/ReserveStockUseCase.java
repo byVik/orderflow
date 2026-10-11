@@ -5,6 +5,6 @@ import dev.viktorstrohush.orderflow.inventory.domain.model.ReservationResult;
 
 public interface ReserveStockUseCase {
 
-    /** Reserva todo o nada. Idempotente por orderId. */
+    /** Reserves all or nothing. Idempotent by orderId. */
     ReservationResult reserve(ReservationRequest request);
 }

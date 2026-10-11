@@ -40,14 +40,14 @@ public class InventoryService implements ReserveStockUseCase, ReleaseStockUseCas
     @Override
     @Transactional
     public ReservationResult reserve(ReservationRequest request) {
-        // Primero los bloqueos: dos entregas del mismo pedido quedan en serie, y la segunda ya
-        // encuentra la reserva de la primera al comprobar la idempotencia.
+        // Locks first: two deliveries of the same order run one after the other, and the second
+        // already finds the first one's reservation when it checks idempotency.
         Map<String, Product> bySku = lockBySku(request.items().stream().map(ReservationRequest.Item::sku).toList());
 
         Optional<Reservation> previous = reservations.find(request.orderId());
         if (previous.isPresent()) {
             ReservationResult result = previous.get().result();
-            log.info("Pedido {} ya procesado; se reenvía el resultado anterior", request.orderId());
+            log.info("Order {} already processed; resending the previous result", request.orderId());
             events.publish(result);
             return result;
         }
@@ -63,7 +63,7 @@ public class InventoryService implements ReserveStockUseCase, ReleaseStockUseCas
         reservations.save(reservation);
         ReservationResult result = reservation.result();
         events.publish(result);
-        log.info("Reserva del pedido {}: {}", request.orderId(), result.reserved() ? "OK" : result.reason());
+        log.info("Reservation for order {}: {}", request.orderId(), result.reserved() ? "OK" : result.reason());
         return result;
     }
 
@@ -72,16 +72,16 @@ public class InventoryService implements ReserveStockUseCase, ReleaseStockUseCas
     public void release(UUID orderId) {
         Optional<Reservation> found = reservations.find(orderId);
         if (found.isEmpty()) {
-            // OrderCancelled y OrderPlaced viajan por topics distintos y Kafka no garantiza orden
-            // entre ellos. Se deja constancia para que ese OrderPlaced, cuando llegue, no reserve nada.
+            // OrderCancelled and OrderPlaced travel on different topics and Kafka guarantees no order
+            // between them. A record is left so that OrderPlaced, when it arrives, reserves nothing.
             reservations.save(Reservation.rejected(orderId, RejectionReason.CANCELLED_BEFORE_RESERVING));
-            log.info("Pedido {} cancelado antes de procesar su reserva", orderId);
+            log.info("Order {} cancelled before its reservation was processed", orderId);
             return;
         }
 
         Reservation reservation = found.get();
         if (!reservation.holdsStock()) {
-            log.info("Pedido {} cancelado: nada que liberar ({})", orderId, reservation.status());
+            log.info("Order {} cancelled: nothing to release ({})", orderId, reservation.status());
             return;
         }
 
@@ -90,7 +90,7 @@ public class InventoryService implements ReserveStockUseCase, ReleaseStockUseCas
         products.saveAll(List.copyOf(bySku.values()));
         reservation.release();
         reservations.save(reservation);
-        log.info("Stock del pedido {} liberado", orderId);
+        log.info("Stock for order {} released", orderId);
     }
 
     private Map<String, Product> lockBySku(List<String> skus) {
@@ -98,16 +98,16 @@ public class InventoryService implements ReserveStockUseCase, ReleaseStockUseCas
                 .collect(Collectors.toMap(Product::sku, Function.identity()));
     }
 
-    /** El motivo es un código; el detalle (qué producto, cuánto había) queda en el log. */
+    /** The reason is a code; the detail (which product, how much there was) stays in the log. */
     private static Optional<String> firstProblem(ReservationRequest request, Map<String, Product> bySku) {
         for (ReservationRequest.Item item : request.items()) {
             Product product = bySku.get(item.sku());
             if (product == null) {
-                log.info("Pedido {}: producto desconocido {}", request.orderId(), item.sku());
+                log.info("Order {}: unknown product {}", request.orderId(), item.sku());
                 return Optional.of(RejectionReason.UNKNOWN_PRODUCT);
             }
             if (!product.canReserve(item.quantity())) {
-                log.info("Pedido {}: stock insuficiente de {} (pedido {}, disponible {})", request.orderId(),
+                log.info("Order {}: insufficient stock of {} (requested {}, available {})", request.orderId(),
                         item.sku(), item.quantity(), product.availableQuantity());
                 return Optional.of(RejectionReason.INSUFFICIENT_STOCK);
             }

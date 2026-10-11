@@ -2,7 +2,7 @@ package dev.viktorstrohush.orderflow.order.domain.exception;
 
 import java.util.Map;
 
-/** Base de los errores de dominio: un código estable y los datos que acompañan al mensaje. */
+/** Base of the domain errors: a stable code and the data that goes with the message. */
 public abstract class OrderException extends RuntimeException {
 
     private final OrderError code;

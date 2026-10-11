@@ -4,6 +4,6 @@ import java.util.UUID;
 
 public interface ReleaseStockUseCase {
 
-    /** Devuelve el stock reservado para un pedido cancelado. Idempotente por orderId. */
+    /** Returns the stock reserved for a cancelled order. Idempotent by orderId. */
     void release(UUID orderId);
 }

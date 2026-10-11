@@ -1,8 +1,8 @@
 package dev.viktorstrohush.orderflow.order.domain.exception;
 
 /**
- * Códigos estables de los errores de dominio. Viajan en la respuesta de error para que quien
- * consume la API pueda mostrar el texto en su idioma sin depender del mensaje.
+ * Stable codes for the domain errors. They travel in the error response so that whoever
+ * consumes the API can show the text in their own language without relying on the message.
  */
 public enum OrderError {
     ORDER_NOT_FOUND,

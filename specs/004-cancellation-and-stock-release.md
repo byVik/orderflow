@@ -1,7 +1,5 @@
 # 004 · Cancellation and stock release
 
-**English** · [Español](es/004-cancelacion-y-liberacion-de-stock.md)
-
 ## Context
 Until now, canceling a `PENDING` order only changed its status. If `OrderPlaced` was already on its
 way, inventory-service reserved the stock anyway and the result was ignored: the stock

@@ -18,7 +18,7 @@ spring:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      # El serializador de valores se elige por tipo en KafkaConfig (JSON, texto o bytes).
+      # The value serializer is chosen by type in KafkaConfig (JSON, text or bytes).
       acks: all
       properties:
         enable.idempotence: true
@@ -41,8 +41,8 @@ orderflow:
   outbox:
     poll-interval-ms: 500
   auth:
-    # Seguro por defecto: el login de demo está apagado y no hay secreto de serie.
-    # El perfil "dev" (application-dev.yml) activa ambos para desarrollo y para Docker Compose.
+    # Secure by default: the demo login is off and there is no built-in secret.
+    # The "dev" profile (application-dev.yml) enables both for development and for Docker Compose.
     demo-login-enabled: ${DEMO_LOGIN_ENABLED:false}
     jwt-secret: ${JWT_SECRET}
 

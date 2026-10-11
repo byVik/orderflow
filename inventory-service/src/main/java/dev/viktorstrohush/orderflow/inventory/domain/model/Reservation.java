@@ -5,17 +5,17 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * El stock apartado para un pedido. Guarda las líneas para poder devolverlas si el pedido se
- * cancela, y sirve de registro de pedidos ya procesados (idempotencia).
+ * The stock set aside for an order. Keeps the lines so they can be returned if the order is
+ * cancelled, and doubles as the record of orders already processed (idempotency).
  */
 public final class Reservation {
 
     public enum Status {
-        /** El stock está descontado y apartado para el pedido. */
+        /** The stock is deducted and set aside for the order. */
         RESERVED,
-        /** No se reservó nada: faltaba stock o el pedido se canceló antes. */
+        /** Nothing was reserved: stock was short or the order was cancelled first. */
         REJECTED,
-        /** Se reservó y después se devolvió por la cancelación del pedido. */
+        /** It was reserved and later returned because the order was cancelled. */
         RELEASED
     }
 
@@ -39,7 +39,7 @@ public final class Reservation {
         return new Reservation(orderId, Status.REJECTED, reason, List.of());
     }
 
-    /** Reconstruye una reserva desde persistencia. */
+    /** Rebuilds a reservation from persistence. */
     public static Reservation restore(UUID orderId, Status status, String reason, List<ReservationRequest.Item> items) {
         return new Reservation(orderId, status, reason, items);
     }
@@ -50,13 +50,13 @@ public final class Reservation {
 
     public void release() {
         if (!holdsStock()) {
-            throw new IllegalStateException("La reserva del pedido " + orderId + " no tiene stock que liberar (" + status + ")");
+            throw new IllegalStateException("The reservation for order " + orderId + " has no stock to release (" + status + ")");
         }
         this.status = Status.RELEASED;
         this.reason = RejectionReason.RELEASED_BY_CANCELLATION;
     }
 
-    /** Lo que se comunica a order-service: reservado o no, y por qué. */
+    /** What is reported to order-service: reserved or not, and why. */
     public ReservationResult result() {
         return holdsStock() ? ReservationResult.reserved(orderId) : ReservationResult.rejected(orderId, reason);
     }

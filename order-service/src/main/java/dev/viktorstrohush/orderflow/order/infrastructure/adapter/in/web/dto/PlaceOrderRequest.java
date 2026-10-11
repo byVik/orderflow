@@ -11,7 +11,7 @@ import java.util.List;
 
 public record PlaceOrderRequest(@NotEmpty @Valid List<Line> lines) {
 
-    /** El máximo es una regla del dominio; aquí solo se repite para responder 400 cuanto antes. */
+    /** The maximum is a domain rule; it is only repeated here to answer 400 as early as possible. */
     public record Line(@NotBlank String sku, @Positive @Max(OrderLine.MAX_QUANTITY) int quantity) {
     }
 }

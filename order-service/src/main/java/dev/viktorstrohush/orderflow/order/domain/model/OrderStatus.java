@@ -1,12 +1,12 @@
 package dev.viktorstrohush.orderflow.order.domain.model;
 
 public enum OrderStatus {
-    /** Creado, esperando la reserva de stock. */
+    /** Created, waiting for the stock reservation. */
     PENDING,
-    /** Stock reservado: pedido confirmado. */
+    /** Stock reserved: order confirmed. */
     CONFIRMED,
-    /** Sin stock suficiente. */
+    /** Not enough stock. */
     REJECTED,
-    /** Cancelado por el cliente antes de confirmarse. */
+    /** Cancelled by the customer before it was confirmed. */
     CANCELLED
 }

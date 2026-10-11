@@ -7,10 +7,10 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.kafka.KafkaContainer;
 
 /**
- * PostgreSQL y Kafka reales para los tests de integración. Al declararlos como beans, su ciclo de
- * vida va unido al del contexto de Spring: arrancan antes que el DataSource y se paran después.
- * Con contenedores estáticos de JUnit se paraban antes y el relay del outbox seguía consultando
- * una base de datos que ya no existía.
+ * Real PostgreSQL and Kafka for the integration tests. Declared as beans, their lifecycle is
+ * tied to that of the Spring context: they start before the DataSource and stop after it.
+ * With static JUnit containers they stopped earlier and the outbox relay kept querying
+ * a database that no longer existed.
  */
 @TestConfiguration(proxyBeanMethods = false)
 class ContainersConfig {

@@ -25,8 +25,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Casos de uso de pedidos. Solo depende de los puertos; Spring se usa únicamente para
- * la demarcación transaccional.
+ * Order use cases. Depends only on the ports; Spring is used solely for
+ * transaction demarcation.
  */
 public class OrderService implements PlaceOrderUseCase, GetOrdersQuery, CancelOrderUseCase, ApplyStockResultUseCase {
 
@@ -46,8 +46,8 @@ public class OrderService implements PlaceOrderUseCase, GetOrdersQuery, CancelOr
     }
 
     /**
-     * Sin @Transactional a propósito: los precios se piden por HTTP y esa llamada no debe retener
-     * una conexión a la base de datos. La transacción cubre solo guardar el pedido y su evento.
+     * No @Transactional on purpose: prices are fetched over HTTP and that call must not hold
+     * a database connection. The transaction covers only saving the order and its event.
      */
     @Override
     public Order place(PlaceOrderCommand command) {
@@ -57,7 +57,7 @@ public class OrderService implements PlaceOrderUseCase, GetOrdersQuery, CancelOr
             events.publishOrderPlaced(persisted);
             return persisted;
         });
-        log.info("Pedido {} creado para el cliente {}", saved.id(), saved.customerId());
+        log.info("Order {} created for customer {}", saved.id(), saved.customerId());
         return saved;
     }
 
@@ -98,7 +98,7 @@ public class OrderService implements PlaceOrderUseCase, GetOrdersQuery, CancelOr
         Order order = getById(id, customerId);
         order.cancel();
         Order saved = orders.save(order);
-        // inventory-service devolverá el stock si ya lo había reservado (compensación de la saga).
+        // inventory-service will return the stock if it had already reserved it (saga compensation).
         events.publishOrderCancelled(saved);
         return saved;
     }
@@ -108,7 +108,7 @@ public class OrderService implements PlaceOrderUseCase, GetOrdersQuery, CancelOr
     public void apply(OrderId id, boolean reserved, String reason) {
         Order order = orders.findById(id).orElseThrow(() -> new OrderNotFoundException(id));
         if (!order.isPending()) {
-            log.info("Resultado de stock ignorado para el pedido {} en estado {}", id, order.status());
+            log.info("Stock result ignored for order {} in status {}", id, order.status());
             return;
         }
         if (reserved) {
@@ -117,6 +117,6 @@ public class OrderService implements PlaceOrderUseCase, GetOrdersQuery, CancelOr
             order.reject(reason);
         }
         orders.save(order);
-        log.info("Pedido {} -> {}", id, order.status());
+        log.info("Order {} -> {}", id, order.status());
     }
 }

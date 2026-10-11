@@ -20,8 +20,8 @@ import java.time.Duration;
 import java.time.Instant;
 
 /**
- * Emisor de tokens SOLO para la demo local. En un entorno real los tokens los emitiría un
- * Identity Provider (Keycloak, Auth0...) y los servicios solo actuarían como resource servers.
+ * Token issuer ONLY for the local demo. In a real environment the tokens would be issued by an
+ * Identity Provider (Keycloak, Auth0...) and the services would only act as resource servers.
  */
 @RestController
 @RequestMapping("/api/auth")
@@ -38,7 +38,7 @@ class AuthController {
     }
 
     @PostMapping("/token")
-    @Operation(summary = "Devuelve un JWT de demo para el usuario indicado")
+    @Operation(summary = "Returns a demo JWT for the given user")
     TokenResponse token(@Valid @RequestBody TokenRequest request) {
         Instant now = Instant.now();
         JwtClaimsSet claims = JwtClaimsSet.builder()

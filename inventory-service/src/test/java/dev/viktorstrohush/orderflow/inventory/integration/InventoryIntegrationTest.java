@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-/** Cada test usa un producto distinto del catálogo de demo para no interferir con los demás. */
+/** Each test uses a different product from the demo catalog so it does not interfere with the others. */
 @SpringBootTest
 @Import(ContainersConfig.class)
 class InventoryIntegrationTest {
@@ -53,12 +53,12 @@ class InventoryIntegrationTest {
     JdbcTemplate jdbc;
 
     @Test
-    void unPedidoRecibidoPorKafkaDescuentaElStockUnaSolaVez() {
+    void anOrderReceivedThroughKafkaDeductsTheStockOnlyOnce() {
         int before = stockOf("WC-01");
         UUID orderId = UUID.randomUUID();
 
         sendOrderPlaced(orderId, "WC-01", 2);
-        sendOrderPlaced(orderId, "WC-01", 2); // duplicado
+        sendOrderPlaced(orderId, "WC-01", 2); // duplicate
 
         await().atMost(Duration.ofSeconds(15)).untilAsserted(() -> assertThat(stockOf("WC-01")).isEqualTo(before - 2));
         await().during(Duration.ofSeconds(2)).atMost(Duration.ofSeconds(5))
@@ -66,7 +66,7 @@ class InventoryIntegrationTest {
     }
 
     @Test
-    void elResultadoDeLaReservaLlegaAKafkaPorElOutbox() {
+    void theReservationResultReachesKafkaThroughTheOutbox() {
         UUID orderId = UUID.randomUUID();
 
         sendOrderPlaced(orderId, "LS-01", 1);
@@ -75,14 +75,14 @@ class InventoryIntegrationTest {
     }
 
     @Test
-    void cancelarUnPedidoDevuelveElStockUnaSolaVez() {
+    void cancellingAnOrderReturnsTheStockOnlyOnce() {
         int before = stockOf("HD-01");
         UUID orderId = UUID.randomUUID();
         sendOrderPlaced(orderId, "HD-01", 2);
         await().atMost(Duration.ofSeconds(15)).untilAsserted(() -> assertThat(stockOf("HD-01")).isEqualTo(before - 2));
 
         sendOrderCancelled(orderId);
-        sendOrderCancelled(orderId); // duplicado
+        sendOrderCancelled(orderId); // duplicate
 
         await().atMost(Duration.ofSeconds(15)).untilAsserted(() -> assertThat(stockOf("HD-01")).isEqualTo(before));
         await().during(Duration.ofSeconds(2)).atMost(Duration.ofSeconds(5))
@@ -91,11 +91,11 @@ class InventoryIntegrationTest {
     }
 
     @Test
-    void siLaCancelacionLlegaAntesQueElPedidoNoSeReservaNada() {
+    void ifTheCancellationArrivesBeforeTheOrderNothingIsReserved() {
         int before = stockOf("DK-01");
         UUID orderId = UUID.randomUUID();
 
-        // Topics distintos: Kafka no garantiza que OrderPlaced se procese antes que OrderCancelled.
+        // Different topics: Kafka does not guarantee OrderPlaced is processed before OrderCancelled.
         sendOrderCancelled(orderId);
         await().atMost(Duration.ofSeconds(15)).untilAsserted(() -> assertThat(statusOf(orderId)).isEqualTo("REJECTED"));
         sendOrderPlaced(orderId, "DK-01", 1);
@@ -105,7 +105,7 @@ class InventoryIntegrationTest {
     }
 
     @Test
-    void variasReservasSimultaneasNoVendenDeMas() throws Exception {
+    void severalSimultaneousReservationsDoNotOversell() throws Exception {
         int stock = stockOf("MC-01");
         int buyers = stock + 5;
         ExecutorService pool = Executors.newFixedThreadPool(buyers);
@@ -152,7 +152,7 @@ class InventoryIntegrationTest {
         return status.isEmpty() ? null : status.getFirst();
     }
 
-    /** Lee el topic desde el principio hasta encontrar el mensaje cuya clave es el id del pedido. */
+    /** Reads the topic from the beginning until it finds the message whose key is the order id. */
     private String awaitMessage(String topic, UUID orderId) {
         Map<String, Object> config = Map.of(
                 ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers(),

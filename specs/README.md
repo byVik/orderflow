@@ -1,7 +1,5 @@
 # Specifications (Spec Driven Development)
 
-**English** · [Español](es/README.md)
-
 Every feature starts here, as a specification, before any code is written. The spec defines
 the expected behavior and the acceptance criteria. Those criteria are the basis for the tests
 and the context given to the AI agents (Claude Code) to implement it.

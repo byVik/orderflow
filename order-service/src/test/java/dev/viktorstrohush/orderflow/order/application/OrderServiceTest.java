@@ -45,7 +45,7 @@ class OrderServiceTest {
 
     @BeforeEach
     void setUp() {
-        // Sin Spring no hay transacción real: el bloque transaccional se ejecuta tal cual.
+        // Without Spring there is no real transaction: the transactional block runs as is.
         service = new OrderService(repository, publisher, catalog, TransactionOperations.withoutTransaction());
     }
 
@@ -54,7 +54,7 @@ class OrderServiceTest {
     }
 
     @Test
-    void creaElPedidoConLosPreciosDelCatalogoYPublicaElEvento() {
+    void createsTheOrderWithTheCatalogPricesAndPublishesTheEvent() {
         when(catalog.pricesFor(anySet())).thenReturn(Map.of("KB-01", new BigDecimal("49.90")));
         when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
@@ -65,7 +65,7 @@ class OrderServiceTest {
     }
 
     @Test
-    void fallaSiElProductoNoExiste() {
+    void failsIfTheProductDoesNotExist() {
         when(catalog.pricesFor(anySet())).thenReturn(Map.of());
 
         assertThatThrownBy(() -> service.place(
@@ -75,7 +75,7 @@ class OrderServiceTest {
     }
 
     @Test
-    void siElCatalogoNoRespondeNoSeGuardaNiSePublicaNada() {
+    void ifTheCatalogDoesNotRespondNothingIsSavedOrPublished() {
         when(catalog.pricesFor(anySet())).thenThrow(new CatalogUnavailableException(new RuntimeException("timeout")));
 
         assertThatThrownBy(() -> service.place(
@@ -86,8 +86,8 @@ class OrderServiceTest {
     }
 
     @Test
-    void unClienteNoPuedeVerPedidosDeOtro() {
-        Order order = pendingOrder("otro");
+    void aCustomerCannotSeeAnotherCustomersOrders() {
+        Order order = pendingOrder("other");
         when(repository.findById(order.id())).thenReturn(Optional.of(order));
 
         assertThatThrownBy(() -> service.getById(order.id(), "viktor"))
@@ -95,7 +95,7 @@ class OrderServiceTest {
     }
 
     @Test
-    void cancelarUnPedidoPendientePublicaLaCancelacion() {
+    void cancellingAPendingOrderPublishesTheCancellation() {
         Order order = pendingOrder("viktor");
         when(repository.findById(order.id())).thenReturn(Optional.of(order));
         when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
@@ -107,8 +107,8 @@ class OrderServiceTest {
     }
 
     @Test
-    void unClienteNoPuedeCancelarPedidosDeOtro() {
-        Order order = pendingOrder("otro");
+    void aCustomerCannotCancelAnotherCustomersOrders() {
+        Order order = pendingOrder("other");
         when(repository.findById(order.id())).thenReturn(Optional.of(order));
 
         assertThatThrownBy(() -> service.cancel(order.id(), "viktor"))
@@ -117,19 +117,19 @@ class OrderServiceTest {
     }
 
     @Test
-    void elResultadoDeStockEsIdempotente() {
+    void theStockResultIsIdempotent() {
         Order order = pendingOrder("viktor");
         order.confirm();
         when(repository.findById(order.id())).thenReturn(Optional.of(order));
 
-        service.apply(order.id(), false, "duplicado");
+        service.apply(order.id(), false, "duplicate");
 
         assertThat(order.status()).isEqualTo(OrderStatus.CONFIRMED);
         verify(repository, never()).save(any());
     }
 
     @Test
-    void unResultadoParaUnPedidoCanceladoSeIgnora() {
+    void aResultForACancelledOrderIsIgnored() {
         Order order = pendingOrder("viktor");
         order.cancel();
         when(repository.findById(order.id())).thenReturn(Optional.of(order));

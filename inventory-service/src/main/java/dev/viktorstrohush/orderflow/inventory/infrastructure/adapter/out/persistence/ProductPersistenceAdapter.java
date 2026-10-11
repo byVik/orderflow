@@ -31,7 +31,7 @@ class ProductPersistenceAdapter implements ProductRepository {
 
     @Override
     public List<Product> findBySkusForUpdate(Collection<String> skus) {
-        // Orden estable por SKU para evitar interbloqueos entre reservas concurrentes.
+        // Stable order by SKU to avoid deadlocks between concurrent reservations.
         return jpa.findBySkuInForUpdate(skus).stream().map(ProductPersistenceAdapter::toDomain).toList();
     }
 

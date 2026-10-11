@@ -7,7 +7,7 @@ import java.util.List;
 
 public interface GetOrdersQuery {
 
-    /** Devuelve el pedido solo si pertenece al cliente indicado. */
+    /** Returns the order only if it belongs to the given customer. */
     Order getById(OrderId id, String customerId);
 
     List<Order> listByCustomer(String customerId);

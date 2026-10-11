@@ -17,7 +17,7 @@ public final class Product {
         this.name = Objects.requireNonNull(name);
         this.price = Objects.requireNonNull(price);
         if (availableQuantity < 0) {
-            throw new IllegalArgumentException("El stock no puede ser negativo");
+            throw new IllegalArgumentException("Stock cannot be negative");
         }
         this.availableQuantity = availableQuantity;
     }
@@ -33,10 +33,10 @@ public final class Product {
         availableQuantity -= quantity;
     }
 
-    /** Devuelve al stock unidades que se habían reservado (cancelación de un pedido). */
+    /** Returns to stock units that had been reserved (an order's cancellation). */
     public void release(int quantity) {
         if (quantity <= 0) {
-            throw new IllegalArgumentException("La cantidad a liberar debe ser mayor que 0");
+            throw new IllegalArgumentException("The quantity to release must be greater than 0");
         }
         availableQuantity += quantity;
     }

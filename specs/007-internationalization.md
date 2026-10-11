@@ -1,11 +1,9 @@
 # 007 · Internationalization and error codes
 
-**English** · [Español](es/007-internacionalizacion.md)
-
 ## Context
 The interface, the specs and the README were written in Spanish. The repository is public and is
-read by people who do not speak Spanish, so English becomes the main language and Spanish is kept
-as a second one. The texts the user sees were hard-coded in the components, and some of them (the
+read by people who do not speak Spanish, so English becomes its language and Spanish is kept only
+as a second language of the interface. The texts the user sees were hard-coded in the components, and some of them (the
 errors and the reason an order is rejected) were written by the backend, so the browser could not
 translate them.
 
@@ -35,8 +33,9 @@ translate them.
   `CANCELLED_BEFORE_RESERVING`. The interface translates it; a reason that is not a known code is
   shown as it is.
 - R7. Errors detected by the client also have a code: `NETWORK` and `SESSION_EXPIRED`.
-- R8. Specs and README are written in English. The Spanish versions are kept in `specs/es/` and
-  `README.es.md`.
+- R8. The repository is written in English: specs, README, code comments, log and error messages,
+  test names and seed data. Spanish lives in two files only: the interface messages
+  (`frontend/src/shared/i18n/locales/es.ts`) and `README.es.md`.
 
 ## Error codes of order-service
 
@@ -53,7 +52,7 @@ translate them.
 | `CATALOG_UNAVAILABLE` | 503 | — |
 
 ## Out of scope
-- Product names in the catalog (seed data) and the comments in the code stay in Spanish.
+- Product names in the catalog are seed data in English; the interface does not translate them.
 - The per-field messages of Bean Validation are not translated by the interface.
 
 ## Acceptance criteria

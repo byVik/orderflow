@@ -19,7 +19,7 @@ This is a personal project to practice **Spring Boot**, **hexagonal architecture
 
 | Catalog | Order tracking |
 |---------|----------------|
-| ![Catalog](docs/screenshots/02-catalogo.png) | ![Pending order](docs/screenshots/05-detalle-pendiente.png) |
+| ![Catalog](docs/screenshots/02-catalog.png) | ![Pending order](docs/screenshots/05-order-pending.png) |
 
 More screenshots in [docs/screenshots](docs/screenshots/). The interface is available in English
 and Spanish, with a switch in the header.
@@ -91,6 +91,21 @@ order-service/src/main/java/.../order
 
 The domain knows nothing about Spring: adapters depend on the core, never the other way around.
 An **ArchUnit** test checks this on every build.
+
+### Frontend organized by domain
+
+```
+frontend/src
+├── features/                # One folder per domain: views, components, store, API client, types and tests
+│   ├── auth/                # Login and session
+│   ├── catalog/             # Catalog and product card
+│   ├── cart/                # Cart
+│   └── orders/              # Order list and detail, status badge, timeline
+├── shared/                  # Used by every domain: HTTP client, i18n, header, polling, formatting
+└── router/                  # Routes and the session guard
+```
+
+Inside a feature, imports are relative; across features and into `shared/` they go through the `@/` alias.
 
 ## Stack
 

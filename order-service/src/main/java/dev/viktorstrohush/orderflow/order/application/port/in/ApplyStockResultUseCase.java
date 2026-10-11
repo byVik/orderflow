@@ -5,8 +5,8 @@ import dev.viktorstrohush.orderflow.order.domain.model.OrderId;
 public interface ApplyStockResultUseCase {
 
     /**
-     * Aplica el resultado de la reserva de stock. Es idempotente: si el pedido ya no está
-     * en PENDING (mensaje duplicado o pedido cancelado) se ignora.
+     * Applies the result of the stock reservation. It is idempotent: if the order is no longer
+     * PENDING (duplicate message or cancelled order) it is ignored.
      */
     void apply(OrderId id, boolean reserved, String reason);
 }

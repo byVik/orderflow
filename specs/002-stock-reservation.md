@@ -1,7 +1,5 @@
 # 002 · Stock reservation (choreographed saga)
 
-**English** · [Español](es/002-reserva-stock.md)
-
 ## Context
 inventory-service listens for `OrderPlaced`, tries to reserve the stock and publishes the result to
 `inventory.stock-result.v1`. order-service consumes that result and updates the order.

@@ -40,9 +40,9 @@ import static org.mockito.ArgumentMatchers.anySet;
 import static org.mockito.Mockito.when;
 
 /**
- * Test de integración con PostgreSQL y Kafka reales (Testcontainers): crea un pedido, comprueba
- * que sus eventos salen por el outbox y que pasa a CONFIRMED / REJECTED al recibir el resultado
- * de inventory-service.
+ * Integration test with real PostgreSQL and Kafka (Testcontainers): it creates an order, checks
+ * that its events go out through the outbox and that it moves to CONFIRMED / REJECTED on
+ * receiving the result from inventory-service.
  */
 @SpringBootTest(properties = "orderflow.auth.jwt-secret=integration-test-secret-0123456789abcdef")
 @Import(ContainersConfig.class)
@@ -70,7 +70,7 @@ class OrderFlowIntegrationTest {
     TransactionTemplate tx;
 
     @Test
-    void elPedidoSeConfirmaCuandoInventoryReservaElStock() {
+    void theOrderIsConfirmedWhenInventoryReservesTheStock() {
         Order order = placeSampleOrder();
 
         kafkaTemplate.send(Topics.STOCK_RESULT, order.id().toString(), StockResultEvent.reserved(order.id().value()));
@@ -80,26 +80,26 @@ class OrderFlowIntegrationTest {
     }
 
     @Test
-    void elPedidoSeRechazaCuandoNoHayStock() {
+    void theOrderIsRejectedWhenThereIsNoStock() {
         Order order = placeSampleOrder();
 
         kafkaTemplate.send(Topics.STOCK_RESULT, order.id().toString(),
-                StockResultEvent.rejected(order.id().value(), "Sin stock de KB-01"));
+                StockResultEvent.rejected(order.id().value(), "No stock of KB-01"));
 
         await().atMost(Duration.ofSeconds(15)).untilAsserted(() -> {
             Order updated = getOrders.getById(order.id(), "viktor");
             assertThat(updated.status()).isEqualTo(OrderStatus.REJECTED);
-            assertThat(updated.rejectionReason()).isEqualTo("Sin stock de KB-01");
+            assertThat(updated.rejectionReason()).isEqualTo("No stock of KB-01");
         });
     }
 
     @Test
-    void alCrearUnPedidoElEventoLlegaAKafkaPorElOutbox() {
+    void whenAnOrderIsCreatedTheEventReachesKafkaThroughTheOutbox() {
         Order order = placeSampleOrder();
 
         String payload = awaitMessage(Topics.ORDER_PLACED, order);
 
-        // JSON tal cual, no un texto JSON escapado dentro de otro.
+        // JSON as is, not an escaped JSON string inside another.
         assertThat(payload).startsWith("{")
                 .contains("\"orderId\":\"" + order.id() + "\"")
                 .contains("\"sku\":\"KB-01\"");
@@ -108,7 +108,7 @@ class OrderFlowIntegrationTest {
     }
 
     @Test
-    void alCancelarUnPedidoSePublicaLaCancelacion() {
+    void whenAnOrderIsCancelledTheCancellationIsPublished() {
         Order order = placeSampleOrder();
 
         cancelOrder.cancel(order.id(), "viktor");
@@ -117,7 +117,7 @@ class OrderFlowIntegrationTest {
     }
 
     @Test
-    void siLaTransaccionHaceRollbackNoQuedaEventoEnElOutbox() {
+    void ifTheTransactionRollsBackNoEventIsLeftInTheOutbox() {
         Order order = Order.place("viktor", List.of(new OrderLine("KB-01", 1, BigDecimal.TEN)));
 
         tx.executeWithoutResult(status -> {
@@ -130,7 +130,7 @@ class OrderFlowIntegrationTest {
     }
 
     @Test
-    void publicarFueraDeUnaTransaccionFalla() {
+    void publishingOutsideATransactionFails() {
         Order order = Order.place("viktor", List.of(new OrderLine("KB-01", 1, BigDecimal.TEN)));
 
         assertThatThrownBy(() -> eventPublisher.publishOrderPlaced(order))
@@ -147,7 +147,7 @@ class OrderFlowIntegrationTest {
                 Integer.class, order.id().toString());
     }
 
-    /** Lee el topic desde el principio hasta encontrar el mensaje cuya clave es el id del pedido. */
+    /** Reads the topic from the beginning until it finds the message whose key is the order id. */
     private String awaitMessage(String topic, Order order) {
         Map<String, Object> config = Map.of(
                 ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafka.getBootstrapServers(),

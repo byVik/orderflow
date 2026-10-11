@@ -8,8 +8,8 @@ import java.util.List;
 interface SpringDataOutboxRepository extends JpaRepository<OutboxJpaEntity, Long> {
 
     /**
-     * Siguiente lote pendiente, en orden de inserción. SKIP LOCKED hace que otra instancia del
-     * relay salte las filas que esta ya tiene bloqueadas en lugar de esperar o enviarlas dos veces.
+     * Next pending batch, in insertion order. SKIP LOCKED makes another instance of the relay
+     * skip the rows this one has already locked instead of waiting or sending them twice.
      */
     @Query(value = "SELECT * FROM outbox WHERE published_at IS NULL ORDER BY id LIMIT :limit FOR UPDATE SKIP LOCKED",
             nativeQuery = true)

@@ -1,7 +1,5 @@
 # 003 · Frontend purchase flow
 
-**English** · [Español](es/003-frontend-flujo-compra.md)
-
 ## Screens
 1. **Login (demo)**: username of 3 to 30 characters; stores the JWT and its expiry.
 2. **Catalog**: cards with price and stock; low-stock warning (≤ 5); no more than the available stock can be added.

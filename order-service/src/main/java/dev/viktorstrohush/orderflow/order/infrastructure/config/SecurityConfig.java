@@ -38,7 +38,7 @@ public class SecurityConfig {
     SecretKey jwtSecretKey(@Value("${orderflow.auth.jwt-secret}") String secret) {
         byte[] bytes = secret.getBytes(StandardCharsets.UTF_8);
         if (bytes.length < 32) {
-            throw new IllegalStateException("orderflow.auth.jwt-secret debe tener al menos 32 bytes");
+            throw new IllegalStateException("orderflow.auth.jwt-secret must be at least 32 bytes long");
         }
         return new SecretKeySpec(bytes, "HmacSHA256");
     }

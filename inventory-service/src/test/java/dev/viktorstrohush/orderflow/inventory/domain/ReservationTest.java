@@ -15,7 +15,7 @@ class ReservationTest {
     private static final List<ReservationRequest.Item> ITEMS = List.of(new ReservationRequest.Item("KB-01", 2));
 
     @Test
-    void unaReservaConStockSePuedeLiberarUnaVez() {
+    void aReservationHoldingStockCanBeReleasedOnce() {
         Reservation reservation = Reservation.reserved(UUID.randomUUID(), ITEMS);
 
         reservation.release();
@@ -26,14 +26,14 @@ class ReservationTest {
     }
 
     @Test
-    void unaReservaRechazadaNoTieneNadaQueLiberar() {
-        Reservation reservation = Reservation.rejected(UUID.randomUUID(), "Stock insuficiente");
+    void aRejectedReservationHasNothingToRelease() {
+        Reservation reservation = Reservation.rejected(UUID.randomUUID(), "Insufficient stock");
 
         assertThatThrownBy(reservation::release).isInstanceOf(IllegalStateException.class);
     }
 
     @Test
-    void elResultadoSoloEsReservadoMientrasElStockSigueApartado() {
+    void theResultIsOnlyReservedWhileTheStockIsStillSetAside() {
         Reservation reservation = Reservation.reserved(UUID.randomUUID(), ITEMS);
         assertThat(reservation.result().reserved()).isTrue();
 

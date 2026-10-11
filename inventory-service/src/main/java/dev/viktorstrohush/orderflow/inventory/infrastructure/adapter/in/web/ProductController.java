@@ -14,7 +14,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/products")
-@Tag(name = "Catálogo")
+@Tag(name = "Catalog")
 class ProductController {
 
     private final ListProductsQuery products;
@@ -24,7 +24,7 @@ class ProductController {
     }
 
     @GetMapping
-    @Operation(summary = "Lista el catálogo, o solo los SKUs indicados en ?skus=A,B")
+    @Operation(summary = "Lists the catalog, or only the SKUs given in ?skus=A,B")
     List<ProductResponse> list(@RequestParam(required = false) List<String> skus) {
         List<Product> result = (skus == null || skus.isEmpty()) ? products.listAll() : products.findBySkus(skus);
         return result.stream().map(ProductResponse::from).toList();

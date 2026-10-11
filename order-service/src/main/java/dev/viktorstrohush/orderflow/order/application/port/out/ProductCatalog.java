@@ -7,9 +7,9 @@ import java.util.Set;
 public interface ProductCatalog {
 
     /**
-     * Precio actual de cada SKU. Los SKUs que no existen no aparecen en el mapa.
+     * Current price of each SKU. SKUs that do not exist are not in the map.
      *
-     * @throws CatalogUnavailableException si el catálogo no responde o responde con error
+     * @throws CatalogUnavailableException if the catalog does not respond or responds with an error
      */
     Map<String, BigDecimal> pricesFor(Set<String> skus);
 }

@@ -8,7 +8,7 @@ import java.util.UUID;
 
 interface SpringDataOrderRepository extends JpaRepository<OrderJpaEntity, UUID> {
 
-    /** El grafo trae las líneas en la misma consulta (join) y evita una consulta por pedido (N+1). */
+    /** The graph fetches the lines in the same query (join) and avoids one query per order (N+1). */
     @EntityGraph(attributePaths = "lines")
     List<OrderJpaEntity> findByCustomerIdOrderByCreatedAtDesc(String customerId);
 }

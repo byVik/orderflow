@@ -1,3 +1,3 @@
--- Una base de datos por microservicio (database-per-service).
+-- One database per microservice (database-per-service).
 CREATE DATABASE orders;
 CREATE DATABASE inventory;

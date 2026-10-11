@@ -2,7 +2,7 @@ package dev.viktorstrohush.orderflow.order.application.port.out;
 
 import dev.viktorstrohush.orderflow.order.domain.model.Order;
 
-/** Debe llamarse dentro de la transacción que guarda el pedido: el evento se confirma con ella. */
+/** Must be called inside the transaction that saves the order: the event commits with it. */
 public interface OrderEventPublisher {
 
     void publishOrderPlaced(Order order);

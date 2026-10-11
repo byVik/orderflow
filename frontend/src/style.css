@@ -1,6 +1,6 @@
 @import 'tailwindcss';
 
-/* Tokens del diseño (prototipo en Claude Design, ver specs/006). */
+/* Design tokens (prototyped in Claude Design, see specs/006). */
 @theme {
   --font-sans: 'Hanken Grotesk', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
@@ -46,7 +46,7 @@
     @apply rounded-xl border border-line bg-white;
   }
 
-  /* Altura mínima de 44 px: objetivo táctil cómodo. */
+  /* Minimum height of 44 px: a comfortable touch target. */
   .btn {
     @apply inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-lg px-4 text-[15px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60;
   }
@@ -67,7 +67,7 @@
     @apply px-1 font-medium text-muted hover:text-ink;
   }
 
-  /* Cifras, SKUs e identificadores: monoespaciada y con dígitos de ancho fijo. */
+  /* Figures, SKUs and identifiers: monospaced, with fixed-width digits. */
   .num {
     @apply font-mono tabular-nums;
   }

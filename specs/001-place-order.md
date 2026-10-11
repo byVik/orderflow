@@ -1,7 +1,5 @@
 # 001 · Place order
 
-**English** · [Español](es/001-crear-pedido.md)
-
 ## Context
 An authenticated user creates an order with one or more products from the catalog. The order is not
 confirmed instantly: it stays `PENDING` until inventory-service reserves the stock (see spec 002).

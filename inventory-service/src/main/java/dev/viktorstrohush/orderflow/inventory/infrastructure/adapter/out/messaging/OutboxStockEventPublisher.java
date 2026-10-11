@@ -13,8 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 
 /**
- * Adaptador de salida con el patrón outbox: guarda el resultado de la reserva en la tabla outbox
- * dentro de la misma transacción que descuenta el stock. El envío a Kafka lo hace {@link OutboxRelay}.
+ * Outbound adapter using the outbox pattern: stores the reservation result in the outbox table
+ * within the same transaction that deducts the stock. {@link OutboxRelay} does the send to Kafka.
  */
 @Component
 class OutboxStockEventPublisher implements StockEventPublisher {
@@ -27,7 +27,7 @@ class OutboxStockEventPublisher implements StockEventPublisher {
         this.json = json;
     }
 
-    /** MANDATORY: publicar fuera de una transacción es un error de programación y debe fallar. */
+    /** MANDATORY: publishing outside a transaction is a programming error and must fail. */
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
     public void publish(ReservationResult result) {
@@ -38,7 +38,7 @@ class OutboxStockEventPublisher implements StockEventPublisher {
             outbox.save(new OutboxJpaEntity(Topics.STOCK_RESULT, result.orderId().toString(),
                     json.writeValueAsString(event), Instant.now()));
         } catch (JsonProcessingException e) {
-            throw new IllegalStateException("No se pudo serializar el resultado del pedido " + result.orderId(), e);
+            throw new IllegalStateException("Could not serialize the result of order " + result.orderId(), e);
         }
     }
 }

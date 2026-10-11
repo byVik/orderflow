@@ -55,9 +55,9 @@ class InventoryServiceTest {
     }
 
     @Test
-    void reservaCuandoHayStockSuficienteYGuardaLasLineas() {
+    void reservesWhenThereIsEnoughStockAndStoresTheLines() {
         UUID orderId = UUID.randomUUID();
-        Product keyboard = new Product("KB-01", "Teclado", BigDecimal.TEN, 5);
+        Product keyboard = new Product("KB-01", "Keyboard", BigDecimal.TEN, 5);
         when(reservations.find(orderId)).thenReturn(Optional.empty());
         when(products.findBySkusForUpdate(anyCollection())).thenReturn(List.of(keyboard));
 
@@ -73,9 +73,9 @@ class InventoryServiceTest {
     }
 
     @Test
-    void rechazaSinTocarElStockSiFaltaAlgunProducto() {
+    void rejectsWithoutTouchingTheStockIfAnyProductIsShort() {
         UUID orderId = UUID.randomUUID();
-        Product keyboard = new Product("KB-01", "Teclado", BigDecimal.TEN, 1);
+        Product keyboard = new Product("KB-01", "Keyboard", BigDecimal.TEN, 1);
         when(reservations.find(orderId)).thenReturn(Optional.empty());
         when(products.findBySkusForUpdate(anyCollection())).thenReturn(List.of(keyboard));
 
@@ -88,9 +88,9 @@ class InventoryServiceTest {
     }
 
     @Test
-    void unMensajeDuplicadoNoVuelveAReservarYReenviaElResultado() {
+    void aDuplicateMessageDoesNotReserveAgainAndResendsTheResult() {
         UUID orderId = UUID.randomUUID();
-        Product keyboard = new Product("KB-01", "Teclado", BigDecimal.TEN, 5);
+        Product keyboard = new Product("KB-01", "Keyboard", BigDecimal.TEN, 5);
         Reservation previous = Reservation.reserved(orderId, List.of(new ReservationRequest.Item("KB-01", 2)));
         when(products.findBySkusForUpdate(anyCollection())).thenReturn(List.of(keyboard));
         when(reservations.find(orderId)).thenReturn(Optional.of(previous));
@@ -105,9 +105,9 @@ class InventoryServiceTest {
     }
 
     @Test
-    void cancelarDevuelveElStockReservado() {
+    void cancellingReturnsTheReservedStock() {
         UUID orderId = UUID.randomUUID();
-        Product keyboard = new Product("KB-01", "Teclado", BigDecimal.TEN, 3);
+        Product keyboard = new Product("KB-01", "Keyboard", BigDecimal.TEN, 3);
         Reservation reserved = Reservation.reserved(orderId, List.of(new ReservationRequest.Item("KB-01", 2)));
         when(reservations.find(orderId)).thenReturn(Optional.of(reserved));
         when(products.findBySkusForUpdate(anyCollection())).thenReturn(List.of(keyboard));
@@ -120,7 +120,7 @@ class InventoryServiceTest {
     }
 
     @Test
-    void unaCancelacionDuplicadaNoDevuelveElStockDosVeces() {
+    void aDuplicateCancellationDoesNotReturnTheStockTwice() {
         UUID orderId = UUID.randomUUID();
         Reservation released = Reservation.reserved(orderId, List.of(new ReservationRequest.Item("KB-01", 2)));
         released.release();
@@ -134,7 +134,7 @@ class InventoryServiceTest {
     }
 
     @Test
-    void siLaCancelacionLlegaAntesQueElPedidoQuedaRegistradaParaNoReservarDespues() {
+    void ifTheCancellationArrivesBeforeTheOrderItIsRecordedSoNothingIsReservedLater() {
         UUID orderId = UUID.randomUUID();
         when(reservations.find(orderId)).thenReturn(Optional.empty());
 

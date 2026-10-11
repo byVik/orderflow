@@ -16,7 +16,7 @@
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>OrderFlow</name>
-    <description>Gestión de pedidos con microservicios event-driven (Spring Boot + Kafka)</description>
+    <description>Order management with event-driven microservices (Spring Boot + Kafka)</description>
 
     <modules>
         <module>events</module>
@@ -52,7 +52,7 @@
 
     <build>
         <plugins>
-            <!-- mvn test: solo tests rápidos, sin Docker. mvn verify: además los de integración. -->
+            <!-- mvn test: fast tests only, no Docker. mvn verify: the integration tests too. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>

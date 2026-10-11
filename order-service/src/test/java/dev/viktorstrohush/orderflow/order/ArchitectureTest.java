@@ -7,19 +7,19 @@ import com.tngtech.archunit.lang.ArchRule;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
-/** La regla de dependencias de la arquitectura hexagonal, comprobada en cada build. */
+/** The dependency rule of the hexagonal architecture, checked on every build. */
 @AnalyzeClasses(packages = "dev.viktorstrohush.orderflow.order", importOptions = ImportOption.DoNotIncludeTests.class)
 class ArchitectureTest {
 
     @ArchTest
-    static final ArchRule elDominioNoDependeDeFrameworksNiDeOtrasCapas = noClasses()
+    static final ArchRule theDomainDoesNotDependOnFrameworksOrOtherLayers = noClasses()
             .that().resideInAPackage("..domain..")
             .should().dependOnClassesThat().resideInAnyPackage(
                     "org.springframework..", "jakarta..", "org.apache.kafka..", "com.fasterxml..",
                     "..application..", "..infrastructure..", "dev.viktorstrohush.orderflow.events..");
 
     @ArchTest
-    static final ArchRule laAplicacionNoConoceLaInfraestructura = noClasses()
+    static final ArchRule theApplicationDoesNotKnowTheInfrastructure = noClasses()
             .that().resideInAPackage("..application..")
             .should().dependOnClassesThat().resideInAnyPackage(
                     "..infrastructure..", "jakarta.persistence..", "org.apache.kafka..",
@@ -27,7 +27,7 @@ class ArchitectureTest {
                     "dev.viktorstrohush.orderflow.events..");
 
     @ArchTest
-    static final ArchRule losAdaptadoresDeEntradaNoUsanLosDeSalida = noClasses()
+    static final ArchRule theInboundAdaptersDoNotUseTheOutboundOnes = noClasses()
             .that().resideInAPackage("..adapter.in..")
             .should().dependOnClassesThat().resideInAPackage("..adapter.out..");
 }

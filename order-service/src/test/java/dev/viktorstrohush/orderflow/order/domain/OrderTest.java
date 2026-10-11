@@ -25,7 +25,7 @@ class OrderTest {
     class Place {
 
         @Test
-        void creaUnPedidoPendienteYCalculaElTotal() {
+        void createsAPendingOrderAndComputesTheTotal() {
             Order order = Order.place("viktor", List.of(line("KB-01", 2, "49.90"), line("MS-01", 1, "19.99")));
 
             assertThat(order.status()).isEqualTo(OrderStatus.PENDING);
@@ -34,26 +34,26 @@ class OrderTest {
         }
 
         @Test
-        void rechazaPedidosSinLineas() {
+        void rejectsOrdersWithoutLines() {
             assertThatThrownBy(() -> Order.place("viktor", List.of()))
                     .isInstanceOf(InvalidOrderException.class);
         }
 
         @Test
-        void rechazaSkusDuplicados() {
+        void rejectsDuplicateSkus() {
             assertThatThrownBy(() -> Order.place("viktor", List.of(line("KB-01", 1, "1"), line("KB-01", 2, "1"))))
                     .isInstanceOfSatisfying(InvalidOrderException.class,
                             e -> assertThat(e.code()).isEqualTo(OrderError.DUPLICATE_SKU));
         }
 
         @Test
-        void rechazaCantidadesNoPositivas() {
+        void rejectsNonPositiveQuantities() {
             assertThatThrownBy(() -> line("KB-01", 0, "1"))
                     .isInstanceOf(InvalidOrderException.class);
         }
 
         @Test
-        void rechazaCantidadesPorEncimaDelMaximoPorLinea() {
+        void rejectsQuantitiesAboveTheMaximumPerLine() {
             assertThat(line("KB-01", OrderLine.MAX_QUANTITY, "1").quantity()).isEqualTo(100);
             assertThatThrownBy(() -> line("KB-01", OrderLine.MAX_QUANTITY + 1, "1"))
                     .isInstanceOfSatisfying(InvalidOrderException.class, e -> {
@@ -67,22 +67,22 @@ class OrderTest {
     class Transitions {
 
         @Test
-        void unPedidoPendientePuedeConfirmarse() {
+        void aPendingOrderCanBeConfirmed() {
             Order order = Order.place("viktor", List.of(line("KB-01", 1, "10")));
             order.confirm();
             assertThat(order.status()).isEqualTo(OrderStatus.CONFIRMED);
         }
 
         @Test
-        void unPedidoRechazadoGuardaElMotivo() {
+        void aRejectedOrderKeepsTheReason() {
             Order order = Order.place("viktor", List.of(line("KB-01", 1, "10")));
-            order.reject("Sin stock de KB-01");
+            order.reject("No stock of KB-01");
             assertThat(order.status()).isEqualTo(OrderStatus.REJECTED);
-            assertThat(order.rejectionReason()).isEqualTo("Sin stock de KB-01");
+            assertThat(order.rejectionReason()).isEqualTo("No stock of KB-01");
         }
 
         @Test
-        void noSePuedeCancelarUnPedidoConfirmado() {
+        void aConfirmedOrderCannotBeCancelled() {
             Order order = Order.place("viktor", List.of(line("KB-01", 1, "10")));
             order.confirm();
             assertThatThrownBy(order::cancel)

@@ -1,8 +1,8 @@
 package dev.viktorstrohush.orderflow.inventory.domain.model;
 
 /**
- * Códigos estables del motivo por el que una reserva no retiene stock. Viajan en el evento
- * StockResult y order-service los guarda tal cual; el texto lo pone la interfaz en su idioma.
+ * Stable codes for why a reservation holds no stock. They travel in the StockResult event
+ * and order-service stores them as is; the UI supplies the text in its own language.
  */
 public final class RejectionReason {
 

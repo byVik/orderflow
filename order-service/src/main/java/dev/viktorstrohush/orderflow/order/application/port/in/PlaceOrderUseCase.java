@@ -8,7 +8,7 @@ public interface PlaceOrderUseCase {
 
     Order place(PlaceOrderCommand command);
 
-    /** El precio no viaja en el comando: se obtiene siempre del catálogo. */
+    /** The price does not travel in the command: it always comes from the catalog. */
     record PlaceOrderCommand(String customerId, List<Line> lines) {
         public record Line(String sku, int quantity) {
         }

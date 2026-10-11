@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.support.TransactionOperations;
 
-/** Ensambla el núcleo de la aplicación con sus adaptadores (el dominio no conoce Spring). */
+/** Wires the application core to its adapters (the domain knows nothing about Spring). */
 @Configuration
 class ApplicationConfig {
 

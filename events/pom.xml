@@ -10,5 +10,5 @@
     </parent>
     <artifactId>events</artifactId>
     <name>OrderFlow :: Events</name>
-    <description>Contratos de eventos compartidos entre microservicios</description>
+    <description>Event contracts shared between microservices</description>
 </project>

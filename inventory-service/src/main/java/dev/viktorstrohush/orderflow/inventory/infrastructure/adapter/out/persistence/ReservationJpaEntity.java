@@ -36,9 +36,9 @@ class ReservationJpaEntity {
     private Instant processedAt;
 
     /**
-     * Long y no long: con la versión a null Spring Data sabe que la fila es nueva y hace un INSERT
-     * directo, de modo que la clave primaria rechaza una segunda reserva del mismo pedido. Además
-     * protege la liberación: dos liberaciones simultáneas no devuelven el stock dos veces.
+     * Long and not long: with a null version Spring Data knows the row is new and does a direct
+     * INSERT, so the primary key rejects a second reservation for the same order. It also
+     * protects the release: two simultaneous releases do not return the stock twice.
      */
     @Version
     private Long version;

@@ -2,9 +2,9 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
 import { router } from './router'
-import { configureHttp } from './api/http'
-import { i18n } from './i18n'
-import { useAuthStore } from './stores/auth'
+import { useAuthStore } from './features/auth/auth.store'
+import { configureHttp } from './shared/api/http'
+import { i18n } from './shared/i18n'
 import './style.css'
 
 const app = createApp(App)
@@ -16,7 +16,7 @@ const auth = useAuthStore()
 configureHttp(
   () => auth.token,
   () => {
-    // Sesión caducada: se conserva el carrito y la página a la que volver tras entrar de nuevo.
+    // Session expired: the cart is kept, and so is the page to return to after signing in again.
     auth.logout()
     const current = router.currentRoute.value
     if (current.name !== 'login') {

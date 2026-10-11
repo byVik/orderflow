@@ -28,7 +28,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/orders")
-@Tag(name = "Pedidos")
+@Tag(name = "Orders")
 class OrderController {
 
     private final PlaceOrderUseCase placeOrder;
@@ -42,7 +42,7 @@ class OrderController {
     }
 
     @PostMapping
-    @Operation(summary = "Crea un pedido (queda PENDING hasta que inventory reserve el stock)")
+    @Operation(summary = "Creates an order (it stays PENDING until inventory reserves the stock)")
     ResponseEntity<OrderResponse> place(@AuthenticationPrincipal Jwt jwt, @Valid @RequestBody PlaceOrderRequest request) {
         var command = new PlaceOrderCommand(jwt.getSubject(), request.lines().stream()
                 .map(l -> new PlaceOrderCommand.Line(l.sku(), l.quantity()))
@@ -54,19 +54,19 @@ class OrderController {
     }
 
     @GetMapping
-    @Operation(summary = "Lista los pedidos del usuario autenticado")
+    @Operation(summary = "Lists the authenticated user's orders")
     List<OrderResponse> list(@AuthenticationPrincipal Jwt jwt) {
         return getOrders.listByCustomer(jwt.getSubject()).stream().map(OrderResponse::from).toList();
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Detalle de un pedido del usuario autenticado")
+    @Operation(summary = "Details of one of the authenticated user's orders")
     OrderResponse get(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID id) {
         return OrderResponse.from(getOrders.getById(new OrderId(id), jwt.getSubject()));
     }
 
     @PostMapping("/{id}/cancel")
-    @Operation(summary = "Cancela un pedido que todavía está PENDING")
+    @Operation(summary = "Cancels an order that is still PENDING")
     OrderResponse cancel(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID id) {
         return OrderResponse.from(cancelOrder.cancel(new OrderId(id), jwt.getSubject()));
     }

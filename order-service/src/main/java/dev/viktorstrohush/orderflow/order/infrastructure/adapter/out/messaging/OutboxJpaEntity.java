@@ -9,7 +9,7 @@ import jakarta.persistence.Table;
 
 import java.time.Instant;
 
-/** Un evento pendiente de publicar. Se inserta en la misma transacción que el cambio de negocio. */
+/** An event waiting to be published. It is inserted in the same transaction as the business change. */
 @Entity
 @Table(name = "outbox")
 class OutboxJpaEntity {

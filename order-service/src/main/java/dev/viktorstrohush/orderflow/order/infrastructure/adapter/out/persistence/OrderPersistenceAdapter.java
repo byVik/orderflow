@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Optional;
 
-/** Adaptador de salida: traduce entre el agregado de dominio y las entidades JPA. */
+/** Outbound adapter: translates between the domain aggregate and the JPA entities. */
 @Component
 class OrderPersistenceAdapter implements OrderRepository {
 

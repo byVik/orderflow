@@ -1,7 +1,5 @@
 # 005 · Transactional outbox
 
-**English** · [Español](es/005-outbox-transaccional.md)
-
 ## Context
 Events were published to Kafka right after the commit. If the service crashed between the commit and
 the send, or Kafka was unavailable, the event was lost and the order stayed `PENDING`

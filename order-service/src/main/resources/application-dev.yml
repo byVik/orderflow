@@ -1,5 +1,5 @@
-# Perfil de desarrollo y demo (SPRING_PROFILES_ACTIVE=dev). No usar en producción:
-# activa un login sin contraseña y un secreto conocido.
+# Development and demo profile (SPRING_PROFILES_ACTIVE=dev). Do not use in production:
+# it enables a passwordless login and a known secret.
 orderflow:
   auth:
     demo-login-enabled: true

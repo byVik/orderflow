@@ -11,9 +11,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * Publica en Kafka los eventos pendientes del outbox. Espera la confirmación del broker antes de
- * marcar cada fila; si un envío falla, la transacción hace rollback y el lote se reintenta en la
- * siguiente pasada. La garantía es at-least-once: los consumidores deben ser idempotentes.
+ * Publishes the outbox's pending events to Kafka. It waits for the broker's acknowledgement before
+ * marking each row; if a send fails, the transaction rolls back and the batch is retried on the
+ * next pass. The guarantee is at-least-once: consumers must be idempotent.
  */
 @Component
 class OutboxRelay {
@@ -40,15 +40,15 @@ class OutboxRelay {
 
     private void send(OutboxJpaEntity message) {
         try {
-            // El payload ya es JSON: se envía como texto, sin volver a serializarlo (ver KafkaConfig).
+            // The payload is already JSON: it is sent as text, without serializing it again (see KafkaConfig).
             kafka.send(message.getTopic(), message.getMessageKey(), message.getPayload())
                     .get(SEND_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IllegalStateException("Envío del outbox interrumpido", e);
+            throw new IllegalStateException("Outbox send interrupted", e);
         } catch (ExecutionException | TimeoutException e) {
-            throw new IllegalStateException("No se pudo publicar el evento " + message.getId()
-                    + " en " + message.getTopic() + "; se reintentará", e);
+            throw new IllegalStateException("Could not publish event " + message.getId()
+                    + " to " + message.getTopic() + "; it will be retried", e);
         }
     }
 }

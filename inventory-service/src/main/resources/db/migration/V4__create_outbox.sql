@@ -1,5 +1,5 @@
--- Outbox transaccional (specs/005): el resultado de la reserva se guarda en la misma
--- transacción que el descuento de stock y un relay lo publica después en Kafka.
+-- Transactional outbox (specs/005): the reservation result is stored in the same
+-- transaction as the stock deduction and a relay publishes it to Kafka afterwards.
 CREATE TABLE outbox (
     id           BIGSERIAL PRIMARY KEY,
     topic        VARCHAR(120) NOT NULL,
@@ -9,5 +9,5 @@ CREATE TABLE outbox (
     published_at TIMESTAMP WITH TIME ZONE
 );
 
--- Índice parcial: el relay solo consulta las filas pendientes, que son pocas.
+-- Partial index: the relay only queries the pending rows, which are few.
 CREATE INDEX idx_outbox_pending ON outbox (id) WHERE published_at IS NULL;

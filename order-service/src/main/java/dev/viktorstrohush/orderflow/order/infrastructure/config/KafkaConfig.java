@@ -26,7 +26,7 @@ import org.springframework.util.backoff.FixedBackOff;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-/** Topics, serialización y gestión de errores de Kafka. Activa el planificador del relay del outbox. */
+/** Kafka topics, serialization and error handling. Enables the scheduler for the outbox relay. */
 @Configuration
 @EnableScheduling
 class KafkaConfig {
@@ -48,16 +48,16 @@ class KafkaConfig {
         return TopicBuilder.name(Topics.STOCK_RESULT).partitions(3).replicas(1).build();
     }
 
-    /** Mismas particiones que el original: el recoverer envía cada mensaje a la misma partición. */
+    /** Same partitions as the original: the recoverer sends each message to the same partition. */
     @Bean
     NewTopic stockResultDeadLetterTopic() {
         return TopicBuilder.name(Topics.STOCK_RESULT + Topics.DLT_SUFFIX).partitions(3).replicas(1).build();
     }
 
     /**
-     * El serializador de valores se elige por tipo: el relay del outbox envía JSON ya serializado
-     * (String), el dead-letter topic puede recibir los bytes originales de un mensaje ilegible, y
-     * el resto de objetos se convierten a JSON. El orden importa: del tipo más concreto al más general.
+     * The value serializer is chosen by type: the outbox relay sends already serialized JSON
+     * (String), the dead-letter topic may receive the original bytes of an unreadable message, and
+     * all other objects are converted to JSON. Order matters: from the most specific type to the most general.
      */
     @Bean
     DefaultKafkaProducerFactoryCustomizer valueSerializerByType() {
@@ -75,7 +75,7 @@ class KafkaConfig {
         return (DefaultKafkaProducerFactory<Object, Object>) factory;
     }
 
-    /** 3 reintentos con 1 s de espera; si siguen fallando, el mensaje va a <topic>-dlt y se deja constancia. */
+    /** 3 retries with a 1 s wait; if they keep failing, the message goes to <topic>-dlt and it is logged. */
     @Bean
     CommonErrorHandler kafkaErrorHandler(KafkaOperations<?, ?> template) {
         DefaultErrorHandler handler =
@@ -83,13 +83,13 @@ class KafkaConfig {
         handler.setRetryListeners(new RetryListener() {
             @Override
             public void failedDelivery(ConsumerRecord<?, ?> record, Exception ex, int deliveryAttempt) {
-                log.warn("Intento {} fallido para {}-{}@{}: {}", deliveryAttempt, record.topic(),
+                log.warn("Attempt {} failed for {}-{}@{}: {}", deliveryAttempt, record.topic(),
                         record.partition(), record.offset(), ex.getMessage());
             }
 
             @Override
             public void recovered(ConsumerRecord<?, ?> record, Exception ex) {
-                log.error("Mensaje con clave {} enviado al dead-letter topic {}{}", record.key(),
+                log.error("Message with key {} sent to dead-letter topic {}{}", record.key(),
                         record.topic(), Topics.DLT_SUFFIX, ex);
             }
         });

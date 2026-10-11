@@ -1,7 +1,5 @@
 # 006 · Interface redesign
 
-**English** · [Español](es/006-rediseno-interfaz.md)
-
 ## Context
 The first interface met spec 003 but was generic and did not explain what is most distinctive about
 the system: that the order is confirmed asynchronously. The redesign was first prototyped in **Claude Design**

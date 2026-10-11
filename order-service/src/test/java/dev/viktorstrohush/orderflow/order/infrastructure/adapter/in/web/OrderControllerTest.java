@@ -50,8 +50,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Los tests de rebanada no escanean las clases @Configuration, así que la seguridad real hay que
- * importarla. Sin el @Import se probaría la configuración por defecto de Spring Boot.
+ * Slice tests do not scan the @Configuration classes, so the real security has to be
+ * imported. Without the @Import, Spring Boot's default configuration would be tested.
  */
 @WebMvcTest(controllers = OrderController.class,
         properties = "orderflow.auth.jwt-secret=" + OrderControllerTest.SECRET)
@@ -87,7 +87,7 @@ class OrderControllerTest {
     }
 
     @Test
-    void crearPedidoDevuelve201ConLocation() throws Exception {
+    void creatingAnOrderReturns201WithLocation() throws Exception {
         Order order = sampleOrder();
         when(placeOrder.place(any())).thenReturn(order);
 
@@ -104,7 +104,7 @@ class OrderControllerTest {
     }
 
     @Test
-    void validaElCuerpoDeLaPeticionEIndicaElCampo() throws Exception {
+    void validatesTheRequestBodyAndNamesTheField() throws Exception {
         mvc.perform(post("/api/orders")
                         .with(jwt())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -117,14 +117,14 @@ class OrderControllerTest {
     }
 
     @Test
-    void sinTokenDevuelve401DelResourceServer() throws Exception {
+    void withoutATokenReturnsTheResourceServers401() throws Exception {
         mvc.perform(get("/api/orders"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(header().string("WWW-Authenticate", startsWith("Bearer")));
     }
 
     @Test
-    void unTokenFirmadoConLaClaveDelServicioEsValido() throws Exception {
+    void aTokenSignedWithTheServiceKeyIsValid() throws Exception {
         when(getOrders.listByCustomer("viktor")).thenReturn(List.of());
         String valid = token(jwtEncoder, Instant.now().plus(Duration.ofMinutes(5)));
 
@@ -133,7 +133,7 @@ class OrderControllerTest {
     }
 
     @Test
-    void unTokenCaducadoDevuelve401() throws Exception {
+    void anExpiredTokenReturns401() throws Exception {
         String expired = token(jwtEncoder, Instant.now().minus(Duration.ofMinutes(10)));
 
         mvc.perform(get("/api/orders").header("Authorization", "Bearer " + expired))
@@ -141,7 +141,7 @@ class OrderControllerTest {
     }
 
     @Test
-    void unTokenFirmadoConOtraClaveDevuelve401() throws Exception {
+    void aTokenSignedWithAnotherKeyReturns401() throws Exception {
         JwtEncoder attacker = new NimbusJwtEncoder(new ImmutableSecret<>(new SecretKeySpec(
                 "another-secret-that-is-not-the-service-one".getBytes(StandardCharsets.UTF_8), "HmacSHA256")));
         String forged = token(attacker, Instant.now().plus(Duration.ofMinutes(5)));
@@ -151,7 +151,7 @@ class OrderControllerTest {
     }
 
     @Test
-    void pedidoDeOtroClienteDevuelve404() throws Exception {
+    void anotherCustomersOrderReturns404() throws Exception {
         Order order = sampleOrder();
         when(getOrders.getById(eq(order.id()), eq("viktor"))).thenThrow(new OrderNotFoundException(order.id()));
 
@@ -162,7 +162,7 @@ class OrderControllerTest {
     }
 
     @Test
-    void cancelarUnPedidoNoPendienteDevuelve409() throws Exception {
+    void cancellingANonPendingOrderReturns409() throws Exception {
         OrderId id = OrderId.newId();
         when(cancelOrder.cancel(eq(id), eq("viktor")))
                 .thenThrow(new InvalidOrderStateException("no", OrderStatus.CONFIRMED));
@@ -174,10 +174,10 @@ class OrderControllerTest {
     }
 
     @Test
-    void unConflictoDeConcurrenciaAlCancelarDevuelve409YNo500() throws Exception {
+    void aConcurrencyConflictWhenCancellingReturns409AndNot500() throws Exception {
         OrderId id = OrderId.newId();
         when(cancelOrder.cancel(eq(id), eq("viktor")))
-                .thenThrow(new OptimisticLockingFailureException("otra transacción ganó"));
+                .thenThrow(new OptimisticLockingFailureException("another transaction won"));
 
         mvc.perform(post("/api/orders/{id}/cancel", id.value()).with(jwt().jwt(j -> j.subject("viktor"))))
                 .andExpect(status().isConflict())
@@ -185,7 +185,7 @@ class OrderControllerTest {
     }
 
     @Test
-    void unErrorDeDominioDevuelve400ConSuCodigoYSusDatos() throws Exception {
+    void aDomainErrorReturns400WithItsCodeAndItsData() throws Exception {
         when(placeOrder.place(any())).thenThrow(new InvalidOrderException(OrderError.UNKNOWN_PRODUCT,
                 "Product XX-99 is not in the catalog", Map.of("sku", "XX-99")));
 
@@ -202,7 +202,7 @@ class OrderControllerTest {
     }
 
     @Test
-    void siElCatalogoNoRespondeDevuelve503() throws Exception {
+    void ifTheCatalogDoesNotRespondReturns503() throws Exception {
         when(placeOrder.place(any())).thenThrow(new CatalogUnavailableException(new RuntimeException("timeout")));
 
         mvc.perform(post("/api/orders")

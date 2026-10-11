@@ -3,7 +3,7 @@ package dev.viktorstrohush.orderflow.events;
 import java.time.Instant;
 import java.util.UUID;
 
-/** Publicado por inventory-service con el resultado de la reserva de stock de un pedido. */
+/** Published by inventory-service with the result of an order's stock reservation. */
 public record StockResultEvent(UUID eventId, UUID orderId, Status status, String reason, Instant occurredAt) {
 
     public enum Status { RESERVED, REJECTED }

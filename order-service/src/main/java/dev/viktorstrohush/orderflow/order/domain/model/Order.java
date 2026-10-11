@@ -10,8 +10,8 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Agregado raíz del pedido. Contiene las reglas de negocio y las transiciones de estado;
- * no depende de Spring ni de JPA.
+ * Aggregate root of the order. Holds the business rules and the state transitions;
+ * it depends on neither Spring nor JPA.
  */
 public final class Order {
 
@@ -32,7 +32,7 @@ public final class Order {
         this.createdAt = Objects.requireNonNull(createdAt);
     }
 
-    /** Crea un pedido nuevo en estado PENDING. */
+    /** Creates a new order in PENDING status. */
     public static Order place(String customerId, List<OrderLine> lines) {
         if (customerId == null || customerId.isBlank()) {
             throw new InvalidOrderException(OrderError.CUSTOMER_REQUIRED, "The customer is required");
@@ -47,7 +47,7 @@ public final class Order {
         return new Order(OrderId.newId(), customerId, lines, OrderStatus.PENDING, null, Instant.now());
     }
 
-    /** Reconstruye un pedido desde persistencia. */
+    /** Rebuilds an order from persistence. */
     public static Order restore(OrderId id, String customerId, List<OrderLine> lines, OrderStatus status,
                                 String rejectionReason, Instant createdAt) {
         return new Order(id, customerId, lines, status, rejectionReason, createdAt);

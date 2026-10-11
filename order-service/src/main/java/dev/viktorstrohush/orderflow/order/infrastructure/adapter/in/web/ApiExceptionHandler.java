@@ -21,9 +21,9 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Traduce las excepciones a respuestas RFC 7807 (Problem Details). Cada respuesta lleva un
- * {@code code} estable (y {@code params} si el mensaje tiene datos): el cliente traduce por el
- * código y usa {@code detail}, en inglés, solo como respaldo.
+ * Translates exceptions into RFC 7807 (Problem Details) responses. Each response carries a
+ * stable {@code code} (and {@code params} if the message has data): the client translates by
+ * the code and uses {@code detail}, in English, only as a fallback.
  */
 @RestControllerAdvice
 class ApiExceptionHandler extends ResponseEntityExceptionHandler {
@@ -46,7 +46,7 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
         return problem(HttpStatus.CONFLICT, ex);
     }
 
-    /** Dos cambios simultáneos sobre el mismo pedido: cancelar justo cuando llega el resultado de stock. */
+    /** Two simultaneous changes to the same order: cancelling just as the stock result arrives. */
     @ExceptionHandler(OptimisticLockingFailureException.class)
     ProblemDetail concurrentUpdate(OptimisticLockingFailureException ex) {
         return problem(HttpStatus.CONFLICT, "CONCURRENT_UPDATE",
@@ -55,12 +55,12 @@ class ApiExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(CatalogUnavailableException.class)
     ProblemDetail catalogUnavailable(CatalogUnavailableException ex) {
-        logger.warn("Catálogo no disponible", ex);
+        logger.warn("Catalog unavailable", ex);
         return problem(HttpStatus.SERVICE_UNAVAILABLE, "CATALOG_UNAVAILABLE",
                 "The catalog is not available right now. Try again in a few seconds.", Map.of());
     }
 
-    /** Sustituye el «Invalid request content.» genérico por los campos que fallan. */
+    /** Replaces the generic "Invalid request content." with the fields that fail. */
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
                                                                   HttpHeaders headers, HttpStatusCode status,

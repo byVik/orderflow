@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/** Adaptador de salida que consulta los precios al catálogo de inventory-service. */
+/** Outbound adapter that asks the inventory-service catalog for the prices. */
 @Component
 class InventoryCatalogClient implements ProductCatalog {
 
@@ -27,7 +27,7 @@ class InventoryCatalogClient implements ProductCatalog {
                            @Value("${orderflow.inventory.base-url}") String baseUrl,
                            @Value("${orderflow.inventory.connect-timeout}") Duration connectTimeout,
                            @Value("${orderflow.inventory.read-timeout}") Duration readTimeout) {
-        // Sin timeouts, un inventory-service lento dejaría las peticiones de pedidos colgadas.
+        // Without timeouts, a slow inventory-service would leave the order requests hanging.
         JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(
                 HttpClient.newBuilder().connectTimeout(connectTimeout).build());
         requestFactory.setReadTimeout(readTimeout);

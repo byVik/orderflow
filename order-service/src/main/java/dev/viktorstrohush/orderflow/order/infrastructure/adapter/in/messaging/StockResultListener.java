@@ -7,7 +7,7 @@ import dev.viktorstrohush.orderflow.order.domain.model.OrderId;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
-/** Adaptador de entrada: escucha el resultado de la reserva de stock. */
+/** Inbound adapter: listens for the result of the stock reservation. */
 @Component
 class StockResultListener {
 

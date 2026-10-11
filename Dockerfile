@@ -1,4 +1,4 @@
-# Imagen común para los microservicios. Uso: docker build --build-arg SERVICE=order-service .
+# Shared image for the microservices. Usage: docker build --build-arg SERVICE=order-service .
 FROM maven:3.9-eclipse-temurin-21 AS build
 ARG SERVICE
 WORKDIR /app
